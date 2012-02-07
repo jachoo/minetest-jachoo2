@@ -33,10 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "voxel.h"
 #include "utility.h" // Needed for UniqueQueue, a member of Map
 #include "modifiedstate.h"
-
-extern "C" {
-	#include "sqlite3.h"
-}
+#include "db.h"
 
 class MapSector;
 class ServerMapSector;
@@ -371,27 +368,27 @@ public:
 		Misc. helper functions for fiddling with directory and file
 		names when saving
 	*/
-	void createDirs(std::string path);
+	//void createDirs(std::string path);
 	// returns something like "map/sectors/xxxxxxxx"
-	std::string getSectorDir(v2s16 pos, int layout = 2);
+	//std::string getSectorDir(v2s16 pos, int layout = 2);
 	// dirname: final directory name
-	v2s16 getSectorPos(std::string dirname);
-	v3s16 getBlockPos(std::string sectordir, std::string blockfile);
-	static std::string getBlockFilename(v3s16 p);
+	//v2s16 getSectorPos(std::string dirname);
+	//v3s16 getBlockPos(std::string sectordir, std::string blockfile);
+	//static std::string getBlockFilename(v3s16 p);
 
 	/*
 		Database functions
 	*/
 	// Create the database structure
-	void createDatabase();
+	//void createDatabase();
 	// Verify we can read/write to the database
-	void verifyDatabase();
+	//void verifyDatabase();
 	// Get an integer suitable for a block
-	static sqlite3_int64 getBlockAsInteger(const v3s16 pos);
-	static v3s16 getIntegerAsBlock(sqlite3_int64 i);
+	//static sqlite3_int64 getBlockAsInteger(const v3s16 pos);
+	//static v3s16 getIntegerAsBlock(sqlite3_int64 i);
 
 	// Returns true if the database file does not exist
-	bool loadFromFolders();
+	//bool loadFromFolders();
 
 	// Call these before and after saving of blocks
 	void beginSave();
@@ -415,7 +412,7 @@ public:
 	// (no MapBlocks)
 	// DEPRECATED? Sectors have no metadata anymore.
 	void saveSectorMeta(ServerMapSector *sector);
-	MapSector* loadSectorMeta(std::string dirname, bool save_after_load);
+	//MapSector* loadSectorMeta(std::string dirname, bool save_after_load);
 	bool loadSectorMeta(v2s16 p2d);
 	
 	// Full load of a sector including all blocks.
@@ -463,10 +460,14 @@ private:
 	/*
 		SQLite database and statements
 	*/
-	sqlite3 *m_database;
+	/*sqlite3 *m_database;
 	sqlite3_stmt *m_database_read;
 	sqlite3_stmt *m_database_write;
-	sqlite3_stmt *m_database_list;
+	sqlite3_stmt *m_database_list;*/
+	Database m_database;
+	Table<v3s16,binary_t>& m_blocks;
+	Table<std::string,std::string>& m_map_meta;
+	Table<v2s16,binary_t>& m_sectors_meta;
 };
 
 /*

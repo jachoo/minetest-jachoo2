@@ -373,10 +373,10 @@ public:
 		*refcount = 1;
 		ptr = t;
 	}
-	SharedPtr(SharedPtr<T> &t)
+	SharedPtr(const SharedPtr<T> &t)
 	{
 		//*this = t;
-		drop();
+		//drop();
 		refcount = t.refcount;
 		(*refcount)++;
 		ptr = t.ptr;
@@ -393,7 +393,7 @@ public:
 		ptr = t;
 		return *this;
 	}
-	SharedPtr<T> & operator=(SharedPtr<T> &t)
+	SharedPtr<T> & operator=(const SharedPtr<T> &t)
 	{
 		drop();
 		refcount = t.refcount;
@@ -1027,23 +1027,34 @@ inline float mystof(std::string s)
 	return f;
 }
 
+template<class T> inline T stox(const std::string& s)
+{
+	T x;
+	std::istringstream ss(s);
+	ss>>x;
+	return x;
+}
+
 //#endif
 
 #define stoi mystoi
 #define stof mystof
 
-inline std::string itos(s32 i)
+template<class T> inline std::string str(const T& i)
 {
 	std::ostringstream o;
 	o<<i;
 	return o.str();
 }
 
-inline std::string ftos(float f)
+template<class T> inline std::string itos(const T& i)
 {
-	std::ostringstream o;
-	o<<f;
-	return o.str();
+	return str(i);
+}
+
+template<class T> inline std::string ftos(const T& f)
+{
+	return str(f);
 }
 
 inline void str_replace(std::string & str, std::string const & pattern,
