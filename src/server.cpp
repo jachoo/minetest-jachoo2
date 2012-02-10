@@ -851,7 +851,7 @@ Server::Server(
 	m_env(NULL),
 	m_con(PROTOCOL_ID, 512, CONNECTION_TIMEOUT, this),
 	m_authmanager(NULL),
-	m_banmanager(mapsavedir+DIR_DELIM+"ipban.txt"),
+	m_banmanager(NULL),
 	m_lua(NULL),
 	m_toolmgr(createToolDefManager()),
 	m_nodedef(createNodeDefManager()),
@@ -943,6 +943,7 @@ Server::Server(
 			this, this, mapsavedir);
 
 	m_authmanager.init(m_env->getDatabase());
+	m_banmanager.init(m_env->getDatabase());
 
 	// Give environment reference to scripting api
 	scriptapi_add_environment(m_lua, m_env);

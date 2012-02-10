@@ -27,11 +27,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common_irrlicht.h"
 #include "exceptions.h"
 
+//#include "db.h"
+class Database;
+template<class Key, class Data> class Table;
+typedef std::string binary_t;
+
 class BanManager
 {
 public:
-	BanManager(const std::string &bannfilepath);
+	BanManager(Database* database = NULL);
 	~BanManager();
+	void init(Database* database = NULL);
 	void load();
 	void save();
 	bool isIpBanned(const std::string &ip);
@@ -43,10 +49,12 @@ public:
 	bool isModified();
 private:
 	JMutex m_mutex;
-	std::string m_banfilepath;
+	//std::string m_banfilepath;
 	std::map<std::string, std::string> m_ips;
 	bool m_modified;
-
+	
+	Database* m_database;
+	Table<std::string,std::string>* m_bantable;
 };
 
 #endif

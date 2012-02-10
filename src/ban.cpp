@@ -24,20 +24,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <set>
 #include "strfnd.h"
 #include "debug.h"
+#include "db.h"
 
-BanManager::BanManager(const std::string &banfilepath):
-		m_banfilepath(banfilepath),
-		m_modified(false)
+BanManager::BanManager(Database* database):
+		m_modified(false),
+		m_database(database),
+		m_bantable(NULL)
 {
 	m_mutex.Init();
-	try{
-		load();
-	}
-	catch(SerializationError &e)
-	{
-		dstream<<"WARNING: BanManager: creating "
-				<<m_banfilepath<<std::endl;
-	}
+
+	if(m_database!=NULL) init();
 }
 
 BanManager::~BanManager()
@@ -45,28 +41,52 @@ BanManager::~BanManager()
 	save();
 }
 
+void BanManager::init(Database* database)
+{
+	if(database!=NULL)m_database = database;
+	assert(m_database != NULL);
+
+	m_bantable = &database->getTable<std::string,std::string>("ipban");
+
+	try{
+		load();
+	}
+	catch(SerializationError &e)
+	{
+		dstream<<"WARNING: BanManager: load error "<<std::endl;
+	}
+}
+
 void BanManager::load()
 {
 	JMutexAutoLock lock(m_mutex);
-	dstream<<"BanManager: loading from "<<m_banfilepath<<std::endl;
+	
+	/*dstream<<"BanManager: loading from "<<m_banfilepath<<std::endl;
 	std::ifstream is(m_banfilepath.c_str(), std::ios::binary);
 	if(is.good() == false)
 	{
 		dstream<<"BanManager: failed loading from "<<m_banfilepath<<std::endl;
 		throw SerializationError("BanManager::load(): Couldn't open file");
-	}
+	}*/
+
+	dstream<<"BanManager: loading from DB"<<std::endl;
+
+	core::list<std::string> iplist;
+	if(!m_bantable->getKeys(iplist)) throw SerializationError("BanManager::load(): Couldn't read keys from ban DB");
 	
-	for(;;)
+	for(core::list<std::string>::ConstIterator it=iplist.begin(); it!=iplist.end(); it++)
 	{
-		if(is.eof() || is.good() == false)
-			break;
-		std::string line;
-		std::getline(is, line, '\n');
-		Strfnd f(line);
-		std::string ip = trim(f.next("|"));
-		std::string name = trim(f.next("|"));
+		/*if(is.eof() || is.good() == false)
+			break;*/
+
+		const std::string& ip = *it;
+
+		std::string name;
+		if(!m_bantable->getNoEx(ip,name))continue;
+
 		if(ip.empty())
 			continue;
+
 		m_ips[ip] = name;
 	}
 	m_modified = false;
@@ -75,20 +95,21 @@ void BanManager::load()
 void BanManager::save()
 {
 	JMutexAutoLock lock(m_mutex);
-	dstream<<"BanManager: saving to "<<m_banfilepath<<std::endl;
-	std::ofstream os(m_banfilepath.c_str(), std::ios::binary);
 	
-	if(os.good() == false)
+	dstream<<"BanManager: saving to DB"<<std::endl;
+	//std::ofstream os(m_banfilepath.c_str(), std::ios::binary);
+	
+	/*if(os.good() == false)
 	{
 		dstream<<"BanManager: failed loading from "<<m_banfilepath<<std::endl;
 		throw SerializationError("BanManager::load(): Couldn't open file");
-	}
+	}*/
 
 	for(std::map<std::string, std::string>::iterator
 			i = m_ips.begin();
 			i != m_ips.end(); i++)
 	{
-		os<<i->first<<"|"<<i->second<<"\n";
+		m_bantable->put(i->first,i->second);
 	}
 	m_modified = false;
 }
