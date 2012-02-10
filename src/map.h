@@ -33,7 +33,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "voxel.h"
 #include "utility.h" // Needed for UniqueQueue, a member of Map
 #include "modifiedstate.h"
-#include "db.h"
+
+//#include "db.h"
+class Database;
+template<class Key, class Data> class Table;
+typedef std::string binary_t;
 
 class MapSector;
 class ServerMapSector;
@@ -464,7 +468,7 @@ private:
 	sqlite3_stmt *m_database_read;
 	sqlite3_stmt *m_database_write;
 	sqlite3_stmt *m_database_list;*/
-	Database m_database;
+	Database* m_database;
 	Table<v3s16,binary_t>& m_blocks;
 	Table<std::string,std::string>& m_map_meta;
 	Table<v2s16,binary_t>& m_sectors_meta;

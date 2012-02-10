@@ -173,7 +173,7 @@ class ServerEnvironment : public Environment
 {
 public:
 	ServerEnvironment(ServerMap *map, lua_State *L, IGameDef *gamedef,
-			IBackgroundBlockEmerger *emerger);
+		IBackgroundBlockEmerger *emerger, const std::string& mapsavedir);
 	~ServerEnvironment();
 
 	Map & getMap()
@@ -193,17 +193,22 @@ public:
 		return 0.10;
 	}
 
+	Database* getDatabase()
+	{
+		return m_database;
+	}
+
 	/*
 		Save players
 	*/
-	void serializePlayers(const std::string &savedir);
-	void deSerializePlayers(const std::string &savedir);
+	void serializePlayers();
+	void deSerializePlayers();
 
 	/*
 		Save and load time of day and game timer
 	*/
-	void saveMeta(const std::string &savedir);
-	void loadMeta(const std::string &savedir);
+	void saveMeta();
+	void loadMeta();
 
 	/*
 		External ActiveObject interface
@@ -350,6 +355,10 @@ private:
 	// A helper variable for incrementing the latter
 	float m_game_time_fraction_counter;
 	core::list<ABMWithState> m_abms;
+
+	Database* m_database;
+	Table<std::string,binary_t>& m_players_db;
+	Table<std::string,binary_t>& m_meta_db;
 };
 
 #ifndef SERVER

@@ -850,7 +850,7 @@ Server::Server(
 	):
 	m_env(NULL),
 	m_con(PROTOCOL_ID, 512, CONNECTION_TIMEOUT, this),
-	m_authmanager(mapsavedir+DIR_DELIM+"auth.txt"),
+	m_authmanager(NULL),
 	m_banmanager(mapsavedir+DIR_DELIM+"ipban.txt"),
 	m_lua(NULL),
 	m_toolmgr(createToolDefManager()),
@@ -881,6 +881,9 @@ Server::Server(
 
 	JMutexAutoLock envlock(m_env_mutex);
 	JMutexAutoLock conlock(m_con_mutex);
+
+	// Create world directory
+	fs::CreateAllDirs(mapsavedir);
 
 	// Path to builtin.lua
 	std::string builtinpath = porting::path_data + DIR_DELIM + "builtin.lua";
@@ -937,7 +940,9 @@ Server::Server(
 	// Initialize Environment
 	
 	m_env = new ServerEnvironment(new ServerMap(mapsavedir, this), m_lua,
-			this, this);
+			this, this, mapsavedir);
+
+	m_authmanager.init(m_env->getDatabase());
 
 	// Give environment reference to scripting api
 	scriptapi_add_environment(m_lua, m_env);
@@ -946,15 +951,15 @@ Server::Server(
 	m_env->getMap().addEventReceiver(this);
 
 	// If file exists, load environment metadata
-	if(fs::PathExists(m_mapsavedir+DIR_DELIM+"env_meta.txt"))
-	{
+	/*if(fs::PathExists(m_mapsavedir+DIR_DELIM+"env_meta.txt"))
+	{*/
 		infostream<<"Server: Loading environment metadata"<<std::endl;
-		m_env->loadMeta(m_mapsavedir);
-	}
+		m_env->loadMeta();
+	//}
 
 	// Load players
 	infostream<<"Server: Loading players"<<std::endl;
-	m_env->deSerializePlayers(m_mapsavedir);
+	m_env->deSerializePlayers();
 
 	/*
 		Add some test ActiveBlockModifiers to environment
@@ -1002,13 +1007,13 @@ Server::~Server()
 			Save players
 		*/
 		infostream<<"Server: Saving players"<<std::endl;
-		m_env->serializePlayers(m_mapsavedir);
+		m_env->serializePlayers();
 
 		/*
 			Save environment metadata
 		*/
 		infostream<<"Server: Saving environment metadata"<<std::endl;
-		m_env->saveMeta(m_mapsavedir);
+		m_env->saveMeta();
 	}
 		
 	/*
@@ -1806,10 +1811,10 @@ void Server::AsyncRunStep()
 			m_env->getMap().save(MOD_STATE_WRITE_NEEDED);
 
 			// Save players
-			m_env->serializePlayers(m_mapsavedir);
+			m_env->serializePlayers();
 			
 			// Save environment metadata
-			m_env->saveMeta(m_mapsavedir);
+			m_env->saveMeta();
 		}
 	}
 }

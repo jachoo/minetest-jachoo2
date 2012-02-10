@@ -1084,8 +1084,43 @@ public:
 	}
 } main_dstream_no_stderr_log_out;
 
+//#include "db.h"
+
 int main(int argc, char *argv[])
 {
+	//j!!!
+	//Database db("../../bin/minetest.sqlite");
+	//db.getTable<int,int>("i").put(1,100);
+	//db.getTable<int,int>("i").put(2,200);
+	//db.getTable<int,int>("i").put(3,300);
+	//db.getTable<int,int>("i").put(3,400); //3!
+	//irr::core::list<int> ks;
+	//db.getTable<int,int>("i").getKeys(ks);
+	//int i;
+	//db.getTable<int,int>("i").getNoEx(1,i);
+	//db.getTable<int,int>("i").getNoEx(2,i);
+	//db.getTable<int,int>("i").getNoEx(3,i);
+	//db.getTable<int,int>("i").getNoEx(4,i);
+
+	//db.getTable<v3s16,binary_t>("x").put(v3s16(1,1,1),"aaa.");
+	//db.getTable<v3s16,binary_t>("x").put(v3s16(1,1,2),"bbbbbbbbbbbbbbbb.");
+	//db.getTable<v3s16,binary_t>("x").put(v3s16(1,1,3),"cccccccccccccccccccccccc.");
+	//db.getTable<v3s16,binary_t>("x").put(v3s16(1,1,3),"d."); //3!
+	//irr::core::list<v3s16> kss;
+	//db.getTable<v3s16,binary_t>("x").getKeys(kss);
+	//binary_t b;
+	//db.getTable<v3s16,binary_t>("x").getNoEx(v3s16(1,1,1),b);
+	//db.getTable<v3s16,binary_t>("x").getNoEx(v3s16(1,1,2),b);
+	//db.getTable<v3s16,binary_t>("x").getNoEx(v3s16(1,1,3),b);
+	//db.getTable<v3s16,binary_t>("x").getNoEx(v3s16(1,1,4),b);
+	//
+	//assert(b=="d." && i==400);
+	//assert(kss.size()==3 && ks.size()==3);
+	
+	//return 0;
+
+
+
 	/*
 		Initialization
 	*/

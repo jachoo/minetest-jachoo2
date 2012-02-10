@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <sstream>
 #include "strfnd.h"
 #include "debug.h"
+#include "db.h"
 
 std::set<std::string> privsToSet(u64 privs)
 {
@@ -112,20 +113,15 @@ u64 stringToPrivs(std::string str)
 	return privs;
 }
 
-AuthManager::AuthManager(const std::string &authfilepath):
-		m_authfilepath(authfilepath),
+AuthManager::AuthManager(Database* database):
+		m_database(database),
+		m_authtable( NULL ),
+		//m_authfilepath(authfilepath),
 		m_modified(false)
 {
 	m_mutex.Init();
-	
-	try{
-		load();
-	}
-	catch(SerializationError &e)
-	{
-		dstream<<"WARNING: AuthManager: creating "
-				<<m_authfilepath<<std::endl;
-	}
+
+	if(m_database!=NULL)init(database);
 }
 
 AuthManager::~AuthManager()
@@ -133,32 +129,58 @@ AuthManager::~AuthManager()
 	save();
 }
 
+void AuthManager::init(Database* database)
+{
+	if(database!=NULL) m_database = database;
+	assert(m_database!=NULL);
+
+	m_authtable = &database->getTable<std::string,std::string>("auth");
+
+	try{
+		load();
+	}
+	catch(SerializationError &e)
+	{
+		dstream<<"WARNING: AuthManager: load error"<<std::endl;
+	}
+}
+
 void AuthManager::load()
 {
 	JMutexAutoLock lock(m_mutex);
 	
-	dstream<<"AuthManager: loading from "<<m_authfilepath<<std::endl;
-	std::ifstream is(m_authfilepath.c_str(), std::ios::binary);
+	dstream<<"AuthManager: loading from DB"<<std::endl;
+
+	core::list<std::string> playerlist;
+	if(!m_authtable->getKeys(playerlist)) throw SerializationError("AuthManager::load(): Couldn't read keys from auth DB");
+
+	/*std::ifstream is(m_authfilepath.c_str(), std::ios::binary);
 	if(is.good() == false)
 	{
 		dstream<<"AuthManager: failed loading from "<<m_authfilepath<<std::endl;
 		throw SerializationError("AuthManager::load(): Couldn't open file");
-	}
+	}*/
 
-	for(;;)
+	//for(;;)
+	for(core::list<std::string>::ConstIterator it=playerlist.begin(); it!=playerlist.end(); it++)
 	{
-		if(is.eof() || is.good() == false)
-			break;
+		const std::string& name = *it;
+
+		std::string line;
+		if(!m_authtable->getNoEx(name,line))continue;
+
+		/*if(is.eof() || is.good() == false)
+			break;*/
 
 		// Read a line
-		std::string line;
-		std::getline(is, line, '\n');
+		/*std::string line;
+		std::getline(is, line, '\n');*/
 
 		std::istringstream iss(line);
 		
 		// Read name
-		std::string name;
-		std::getline(iss, name, ':');
+		/*std::string name;
+		std::getline(iss, name, ':');*/
 
 		// Read password
 		std::string pwd;
@@ -183,13 +205,13 @@ void AuthManager::save()
 {
 	JMutexAutoLock lock(m_mutex);
 	
-	dstream<<"AuthManager: saving to "<<m_authfilepath<<std::endl;
-	std::ofstream os(m_authfilepath.c_str(), std::ios::binary);
+	dstream<<"AuthManager: saving to DB"<<std::endl;
+	/*std::ofstream os(m_authfilepath.c_str(), std::ios::binary);
 	if(os.good() == false)
 	{
 		dstream<<"AuthManager: failed saving to "<<m_authfilepath<<std::endl;
 		throw SerializationError("AuthManager::save(): Couldn't open file");
-	}
+	}*/
 	
 	for(core::map<std::string, AuthData>::Iterator
 			i = m_authdata.getIterator();
@@ -199,7 +221,10 @@ void AuthManager::save()
 		if(name == "")
 			continue;
 		AuthData ad = i.getNode()->getValue();
-		os<<name<<":"<<ad.pwd<<":"<<privsToString(ad.privs)<<"\n";
+		
+		std::ostringstream os;
+		os<<ad.pwd<<":"<<privsToString(ad.privs)<<"\n";
+		m_authtable->put(name,os.str());
 	}
 
 	m_modified = false;

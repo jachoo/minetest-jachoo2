@@ -80,11 +80,17 @@ public:
 	{}
 };
 
+//#include "db.h"
+class Database;
+template<class Key, class Data> class Table;
+typedef std::string binary_t;
+
 class AuthManager
 {
 public:
-	AuthManager(const std::string &authfilepath);
+	AuthManager(Database* database = NULL);
 	~AuthManager();
+	void init(Database* database);
 	void load();
 	void save();
 	bool exists(const std::string &username);
@@ -98,9 +104,12 @@ public:
 	bool isModified();
 private:
 	JMutex m_mutex;
-	std::string m_authfilepath;
+	//std::string m_authfilepath;
 	core::map<std::string, AuthData> m_authdata;
 	bool m_modified;
+	Database* m_database;
+	Table<std::string,std::string>* m_authtable;
+	
 };
 
 #endif

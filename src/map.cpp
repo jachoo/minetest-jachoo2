@@ -38,7 +38,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "profiler.h"
 #include "nodedef.h"
 #include "gamedef.h"
-
 #include "db.h"
 
 #define PP(x) "("<<(x).X<<","<<(x).Y<<","<<(x).Z<<")"
@@ -71,7 +70,6 @@ Map::Map(std::ostream &dout, IGameDef *gamedef):
 {
 	/*m_sector_mutex.Init();
 	assert(m_sector_mutex.IsInitialized());*/
-	_db_test_();
 }
 
 Map::~Map()
@@ -1917,10 +1915,10 @@ ServerMap::ServerMap(std::string savedir, IGameDef *gamedef):
 	Map(dout_server, gamedef),
 	m_seed(0),
 	m_map_metadata_changed(true),
-	m_database(savedir+"/map.sqlite"),
-	m_blocks( m_database.getTable<v3s16,binary_t>("blocks") ),
-	m_map_meta( m_database.getTable<std::string,std::string>("map_meta") ),
-	m_sectors_meta( m_database.getTable<v2s16,binary_t>("sectors_meta") )
+	m_database( new Database(savedir + DIR_DELIM "map.sqlite") ),
+	m_blocks( m_database->getTable<v3s16,binary_t>("blocks",true) ),
+	m_map_meta( m_database->getTable<std::string,std::string>("map_meta") ),
+	m_sectors_meta( m_database->getTable<v2s16,binary_t>("sectors_meta") )
 {
 	infostream<<__FUNCTION_NAME<<std::endl;
 
@@ -1952,77 +1950,80 @@ ServerMap::ServerMap(std::string savedir, IGameDef *gamedef):
 	m_savedir = savedir;
 	m_map_saving_enabled = false;
 
-	try
-	{
-		// If directory exists, check contents and load if possible
-		if(fs::PathExists(m_savedir))
-		{
-			// If directory is empty, it is safe to save into it.
-			if(fs::GetDirListing(m_savedir).size() == 0)
-			{
-				infostream<<"Server: Empty save directory is valid."
-						<<std::endl;
-				m_map_saving_enabled = true;
-			}
-			else
-			{
-				try{
-					// Load map metadata (seed, chunksize)
-					loadMapMeta();
-				}
-				catch(FileNotGoodException &e){
-					infostream<<"WARNING: Could not load map metadata"
-							//<<" Disabling chunk-based generator."
-							<<std::endl;
-					//m_chunksize = 0;
-				}
+	loadMapMeta();
+	m_map_saving_enabled = true;
 
-				/*try{
-					// Load chunk metadata
-					loadChunkMeta();
-				}
-				catch(FileNotGoodException &e){
-					infostream<<"WARNING: Could not load chunk metadata."
-							<<" Disabling chunk-based generator."
-							<<std::endl;
-					m_chunksize = 0;
-				}*/
+	//try
+	//{
+	//	// If directory exists, check contents and load if possible
+	//	if(fs::PathExists(m_savedir))
+	//	{
+	//		// If directory is empty, it is safe to save into it.
+	//		if(fs::GetDirListing(m_savedir).size() == 0)
+	//		{
+	//			infostream<<"Server: Empty save directory is valid."
+	//					<<std::endl;
+	//			m_map_saving_enabled = true;
+	//		}
+	//		else
+	//		{
+	//			try{
+	//				// Load map metadata (seed, chunksize)
+	//				loadMapMeta();
+	//			}
+	//			catch(FileNotGoodException &e){
+	//				infostream<<"WARNING: Could not load map metadata"
+	//						//<<" Disabling chunk-based generator."
+	//						<<std::endl;
+	//				//m_chunksize = 0;
+	//			}
 
-				/*infostream<<"Server: Successfully loaded chunk "
-						"metadata and sector (0,0) from "<<savedir<<
-						", assuming valid save directory."
-						<<std::endl;*/
+	//			/*try{
+	//				// Load chunk metadata
+	//				loadChunkMeta();
+	//			}
+	//			catch(FileNotGoodException &e){
+	//				infostream<<"WARNING: Could not load chunk metadata."
+	//						<<" Disabling chunk-based generator."
+	//						<<std::endl;
+	//				m_chunksize = 0;
+	//			}*/
 
-				infostream<<"Server: Successfully loaded map "
-						<<"and chunk metadata from "<<savedir
-						<<", assuming valid save directory."
-						<<std::endl;
+	//			/*infostream<<"Server: Successfully loaded chunk "
+	//					"metadata and sector (0,0) from "<<savedir<<
+	//					", assuming valid save directory."
+	//					<<std::endl;*/
 
-				m_map_saving_enabled = true;
-				// Map loaded, not creating new one
-				return;
-			}
-		}
-		// If directory doesn't exist, it is safe to save to it
-		else{
-			m_map_saving_enabled = true;
-		}
-	}
-	catch(std::exception &e)
-	{
-		infostream<<"WARNING: Server: Failed to load map from "<<savedir
-				<<", exception: "<<e.what()<<std::endl;
-		infostream<<"Please remove the map or fix it."<<std::endl;
-		infostream<<"WARNING: Map saving will be disabled."<<std::endl;
-	}
+	//			infostream<<"Server: Successfully loaded map "
+	//					<<"and chunk metadata from "<<savedir
+	//					<<", assuming valid save directory."
+	//					<<std::endl;
 
-	infostream<<"Initializing new map."<<std::endl;
+	//			m_map_saving_enabled = true;
+	//			// Map loaded, not creating new one
+	//			return;
+	//		}
+	//	}
+	//	// If directory doesn't exist, it is safe to save to it
+	//	else{
+	//		m_map_saving_enabled = true;
+	//	}
+	//}
+	//catch(std::exception &e)
+	//{
+	//	infostream<<"WARNING: Server: Failed to load map from "<<savedir
+	//			<<", exception: "<<e.what()<<std::endl;
+	//	infostream<<"Please remove the map or fix it."<<std::endl;
+	//	infostream<<"WARNING: Map saving will be disabled."<<std::endl;
+	//}
 
-	// Create zero sector
-	emergeSector(v2s16(0,0));
+	//infostream<<"Initializing new map."<<std::endl;
 
-	// Initially write whole map
-	save(MOD_STATE_CLEAN);
+	//// Create zero sector
+	//emergeSector(v2s16(0,0));
+
+	//// Initially write whole map
+	//save(MOD_STATE_CLEAN);
 }
 
 ServerMap::~ServerMap()
@@ -2057,6 +2058,7 @@ ServerMap::~ServerMap()
 		sqlite3_finalize(m_database_write);
 	if(m_database)
 		sqlite3_close(m_database);*/
+	delete m_database;
 
 #if 0
 	/*
@@ -2982,9 +2984,10 @@ void ServerMap::saveMapMeta()
 
 	os<<"[end_of_params]\n";*/
 
-	m_map_meta.put("seed",itos(m_seed));
-	
-	m_map_metadata_changed = false;
+	bool success = true;
+	if(m_map_meta.put("seed",itos(m_seed))) success = false;
+		
+	if(success) m_map_metadata_changed = false;
 }
 
 void ServerMap::loadMapMeta()
@@ -3023,6 +3026,7 @@ void ServerMap::loadMapMeta()
 	std::string s;
 	if(m_map_meta.getNoEx("seed",s))
 		m_seed = stox<u64>(s);
+	else m_map_metadata_changed = true; //auto-generated, needs save
 
 	infostream<<"ServerMap::loadMapMeta(): "<<"seed="<<m_seed<<std::endl;
 }
@@ -3201,11 +3205,11 @@ bool ServerMap::loadSectorFull(v2s16 p2d)
 #endif
 
 void ServerMap::beginSave() {
-	m_database.begin();
+	m_database->begin();
 }
 
 void ServerMap::endSave() {
-	m_database.commit();
+	m_database->commit();
 }
 
 void ServerMap::saveBlock(MapBlock *block)

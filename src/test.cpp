@@ -1084,6 +1084,9 @@ struct TestConnection
 
 void run_tests()
 {
+	//j!!!
+	return;
+
 	DSTACK(__FUNCTION_NAME);
 	
 	// Create node definitions
