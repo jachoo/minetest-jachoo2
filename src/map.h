@@ -368,32 +368,6 @@ public:
 	// Helper for placing objects on ground level
 	s16 findGroundLevel(v2s16 p2d);
 
-	/*
-		Misc. helper functions for fiddling with directory and file
-		names when saving
-	*/
-	//void createDirs(std::string path);
-	// returns something like "map/sectors/xxxxxxxx"
-	//std::string getSectorDir(v2s16 pos, int layout = 2);
-	// dirname: final directory name
-	//v2s16 getSectorPos(std::string dirname);
-	//v3s16 getBlockPos(std::string sectordir, std::string blockfile);
-	//static std::string getBlockFilename(v3s16 p);
-
-	/*
-		Database functions
-	*/
-	// Create the database structure
-	//void createDatabase();
-	// Verify we can read/write to the database
-	//void verifyDatabase();
-	// Get an integer suitable for a block
-	//static sqlite3_int64 getBlockAsInteger(const v3s16 pos);
-	//static v3s16 getIntegerAsBlock(sqlite3_int64 i);
-
-	// Returns true if the database file does not exist
-	//bool loadFromFolders();
-
 	// Call these before and after saving of blocks
 	void beginSave();
 	void endSave();
@@ -462,12 +436,8 @@ private:
 	bool m_map_metadata_changed;
 	
 	/*
-		SQLite database and statements
+		SQLite database and tables
 	*/
-	/*sqlite3 *m_database;
-	sqlite3_stmt *m_database_read;
-	sqlite3_stmt *m_database_write;
-	sqlite3_stmt *m_database_list;*/
 	Database* m_database;
 	Table<v3s16,binary_t>& m_blocks;
 	Table<std::string,std::string>& m_map_meta;
