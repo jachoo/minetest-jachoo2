@@ -35,9 +35,9 @@ typedef std::string binary_t;
 class BanManager
 {
 public:
-	BanManager(Database* database = NULL);
+	BanManager(Database* database = NULL, const std::string& file = "");
 	~BanManager();
-	void init(Database* database = NULL);
+	void init(Database* database = NULL, const std::string& file = "");
 	void load();
 	void save();
 	bool isIpBanned(const std::string &ip);
@@ -49,7 +49,7 @@ public:
 	bool isModified();
 private:
 	JMutex m_mutex;
-	//std::string m_banfilepath;
+	std::string m_banfilepath;
 	std::map<std::string, std::string> m_ips;
 	bool m_modified;
 	

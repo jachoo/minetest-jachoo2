@@ -88,9 +88,9 @@ typedef std::string binary_t;
 class AuthManager
 {
 public:
-	AuthManager(Database* database = NULL);
+	AuthManager(Database* database = NULL, const std::string& file = "");
 	~AuthManager();
-	void init(Database* database);
+	void init(Database* database, const std::string& file = "");
 	void load();
 	void save();
 	bool exists(const std::string &username);
@@ -104,7 +104,7 @@ public:
 	bool isModified();
 private:
 	JMutex m_mutex;
-	//std::string m_authfilepath;
+	std::string m_authfilepath;
 	core::map<std::string, AuthData> m_authdata;
 	bool m_modified;
 	Database* m_database;

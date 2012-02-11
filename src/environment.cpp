@@ -330,271 +330,238 @@ ServerEnvironment::~ServerEnvironment()
 
 void ServerEnvironment::serializePlayers()
 {
-	//std::string players_path = savedir + "/players";
-	//fs::CreateDir(players_path);
-
-	//core::map<Player*, bool> saved_players;
-
-	//std::vector<fs::DirListNode> player_files = fs::GetDirListing(players_path);
-	//for(u32 i=0; i<player_files.size(); i++)
-	//{
-	//	if(player_files[i].dir)
-	//		continue;
-	//	
-	//	// Full path to this file
-	//	std::string path = players_path + "/" + player_files[i].name;
-
-	//	//infostream<<"Checking player file "<<path<<std::endl;
-
-	//	// Load player to see what is its name
-	//	ServerRemotePlayer testplayer(this);
-	//	{
-	//		// Open file and deserialize
-	//		std::ifstream is(path.c_str(), std::ios_base::binary);
-	//		if(is.good() == false)
-	//		{
-	//			infostream<<"Failed to read "<<path<<std::endl;
-	//			continue;
-	//		}
-	//		testplayer.deSerialize(is);
-	//	}
-
-	//	//infostream<<"Loaded test player with name "<<testplayer.getName()<<std::endl;
-	//	
-	//	// Search for the player
-	//	std::string playername = testplayer.getName();
-	//	Player *player = getPlayer(playername.c_str());
-	//	if(player == NULL)
-	//	{
-	//		infostream<<"Didn't find matching player, ignoring file "<<path<<std::endl;
-	//		continue;
-	//	}
-
-	//	//infostream<<"Found matching player, overwriting."<<std::endl;
-
-	//	// OK, found. Save player there.
-	//	{
-	//		// Open file and serialize
-	//		std::ofstream os(path.c_str(), std::ios_base::binary);
-	//		if(os.good() == false)
-	//		{
-	//			infostream<<"Failed to overwrite "<<path<<std::endl;
-	//			continue;
-	//		}
-	//		player->serialize(os);
-	//		saved_players.insert(player, true);
-	//	}
-	//}
+	//saving to files discontinued.
+	//now everything is saved in env database
 
 	for(core::list<Player*>::Iterator i = m_players.begin();
 			i != m_players.end(); i++)
 	{
 		Player *player = *i;
-		//if(saved_players.find(player) != NULL)
-		//{
-		//	/*infostream<<"Player "<<player->getName()
-		//			<<" was already saved."<<std::endl;*/
-		//	continue;
-		//}
 		std::string playername = player->getName();
+		
 		// Don't save unnamed player
 		if(playername == "")
 		{
 			//infostream<<"Not saving unnamed player."<<std::endl;
 			continue;
 		}
+
 		/*
-			Find a sane filename
+			And don't save players with wrong names
 		*/
 		if(string_allowed(playername, PLAYERNAME_ALLOWED_CHARS) == false)
-			playername = "player";
-		/*std::string path = players_path + "/" + playername;
-		bool found = false;
-		for(u32 i=0; i<1000; i++)
-		{
-			if(fs::PathExists(path) == false)
-			{
-				found = true;
-				break;
-			}
-			path = players_path + "/" + playername + itos(i);
-		}
-		if(found == false)
-		{
-			infostream<<"Didn't find free file for player"<<std::endl;
 			continue;
-		}*/
 
-		{
-			/*infostream<<"Saving player "<<player->getName()<<" to "
-					<<path<<std::endl;*/
-			// Open file and serialize
-			//std::ofstream os(path.c_str(), std::ios_base::binary);
-			std::ostringstream os;
-			/*if(os.good() == false)
-			{
-				infostream<<"Failed to overwrite "<<path<<std::endl;
-				continue;
-			}*/
-			player->serialize(os);
-			//saved_players.insert(player, true);
-			m_players_db.put(playername,os.str());
-		}
+		std::ostringstream os;
+		player->serialize(os);
+		m_players_db.put(playername,os.str());
 	}
 
 	//infostream<<"Saved "<<saved_players.size()<<" players."<<std::endl;
 }
 
-void ServerEnvironment::deSerializePlayers()
+void ServerEnvironment::deSerializePlayers(const std::string& savedir)
 {
-	/*std::string players_path = savedir + "/players";
+	//now, player data is stored in database.
+	//for backwards compability, loading from files works, but ONLY if no players can be load from DB (!)
 
-	core::map<Player*, bool> saved_players;
-
-	std::vector<fs::DirListNode> player_files = fs::GetDirListing(players_path);
-	for(u32 i=0; i<player_files.size(); i++)*/
 	core::list<std::string> player_names;
 	m_players_db.getKeys(player_names);
 
-	for(core::list<std::string>::ConstIterator i=player_names.begin(); i!=player_names.end(); i++)
+	if(player_names.size()>0) //load from DB
 	{
-		const std::string& player_name = *i;
-		//if(player_files[i].dir)
-		//	continue;
-		//
-		//// Full path to this file
-		//std::string path = players_path + "/" + player_files[i].name;
-
-		//infostream<<"Checking player file "<<path<<std::endl;
-
-		// Load player data from DB
-		std::string data;
-		if(!m_players_db.getNoEx(player_name,data)) continue;
-
-		// Load player to see what is its name
-		ServerRemotePlayer testplayer(this);
+		for(core::list<std::string>::ConstIterator i=player_names.begin(); i!=player_names.end(); i++)
 		{
-			// Open file and deserialize
-			//std::ifstream is(path.c_str(), std::ios_base::binary);
-			std::istringstream is(data,std::ios::binary);
-			if(is.good() == false)
+			const std::string& player_name = *i;
+
+			// Load player data from DB
+			std::string data;
+			if(!m_players_db.getNoEx(player_name,data)) continue;
+
+			// Load player to see what is its name
+			ServerRemotePlayer testplayer(this);
 			{
-				infostream<<"Failed to read player data from DB"<<std::endl;
-				continue;
+				std::istringstream is(data,std::ios::binary);
+				if(is.good() == false)
+				{
+					infostream<<"Failed to read player data from DB"<<std::endl;
+					continue;
+				}
+				testplayer.deSerialize(is);
 			}
-			testplayer.deSerialize(is);
-		}
 
-		if(!string_allowed(testplayer.getName(), PLAYERNAME_ALLOWED_CHARS))
-		{
-			infostream<<"Not loading player with invalid name: "
-					<<testplayer.getName()<<std::endl;
-		}
-
-		infostream<<"Loaded test player with name "<<testplayer.getName()
-				<<std::endl;
-		
-		// Search for the player
-		std::string playername = testplayer.getName();
-		Player *player = getPlayer(playername.c_str());
-		bool newplayer = false;
-		if(player == NULL)
-		{
-			infostream<<"Is a new player"<<std::endl;
-			player = new ServerRemotePlayer(this);
-			newplayer = true;
-		}
-
-		ServerRemotePlayer *srp = static_cast<ServerRemotePlayer*>(player);
-
-		// Load player
-		{
-			infostream<<"Reading player "<<testplayer.getName()<<" from DB"<<std::endl;
-			// Open file and deserialize
-			//std::ifstream is(path.c_str(), std::ios_base::binary);
-			std::istringstream is(data,std::ios::binary);
-			if(is.good() == false)
+			if(!string_allowed(testplayer.getName(), PLAYERNAME_ALLOWED_CHARS))
 			{
-				infostream<<"Failed to read player data from DB"<<std::endl;
-				continue;
+				infostream<<"Not loading player with invalid name: "
+						<<testplayer.getName()<<std::endl;
 			}
-			srp->deSerialize(is);
-			srp->m_last_good_position = srp->getBasePosition();
-			srp->m_last_good_position_age = 0;
-		}
 
-		if(newplayer)
+			infostream<<"Loaded test player with name "<<testplayer.getName()
+					<<std::endl;
+			
+			// Search for the player
+			std::string playername = testplayer.getName();
+			Player *player = getPlayer(playername.c_str());
+			bool newplayer = false;
+			if(player == NULL)
+			{
+				infostream<<"Is a new player"<<std::endl;
+				player = new ServerRemotePlayer(this);
+				newplayer = true;
+			}
+
+			ServerRemotePlayer *srp = static_cast<ServerRemotePlayer*>(player);
+
+			// Load player
+			{
+				infostream<<"Reading player "<<testplayer.getName()<<" from DB"<<std::endl;
+				std::istringstream is(data,std::ios::binary);
+				if(is.good() == false)
+				{
+					infostream<<"Failed to read player data from DB"<<std::endl;
+					continue;
+				}
+				srp->deSerialize(is);
+				srp->m_last_good_position = srp->getBasePosition();
+				srp->m_last_good_position_age = 0;
+			}
+
+			if(newplayer)
+			{
+				addPlayer(player);
+			}
+		}
+	} else { //load from files
+		std::string players_path = savedir + "/players";
+
+		core::map<Player*, bool> saved_players;
+
+		std::vector<fs::DirListNode> player_files = fs::GetDirListing(players_path);
+		for(u32 i=0; i<player_files.size(); i++)
 		{
-			addPlayer(player);
+			if(player_files[i].dir)
+				continue;
+			
+			// Full path to this file
+			std::string path = players_path + "/" + player_files[i].name;
+
+			infostream<<"Checking player file "<<path<<std::endl;
+
+			// Load player to see what is its name
+			ServerRemotePlayer testplayer(this);
+			{
+				// Open file and deserialize
+				std::ifstream is(path.c_str(), std::ios_base::binary);
+				if(is.good() == false)
+				{
+					infostream<<"Failed to read "<<path<<std::endl;
+					continue;
+				}
+				testplayer.deSerialize(is);
+			}
+
+			if(!string_allowed(testplayer.getName(), PLAYERNAME_ALLOWED_CHARS))
+			{
+				infostream<<"Not loading player with invalid name: "
+						<<testplayer.getName()<<std::endl;
+			}
+
+			infostream<<"Loaded test player with name "<<testplayer.getName()
+					<<std::endl;
+			
+			// Search for the player
+			std::string playername = testplayer.getName();
+			Player *player = getPlayer(playername.c_str());
+			bool newplayer = false;
+			if(player == NULL)
+			{
+				infostream<<"Is a new player"<<std::endl;
+				player = new ServerRemotePlayer(this);
+				newplayer = true;
+			}
+
+			ServerRemotePlayer *srp = static_cast<ServerRemotePlayer*>(player);
+
+			// Load player
+			{
+				infostream<<"Reading player "<<testplayer.getName()<<" from "
+						<<path<<std::endl;
+				// Open file and deserialize
+				std::ifstream is(path.c_str(), std::ios_base::binary);
+				if(is.good() == false)
+				{
+					infostream<<"Failed to read "<<path<<std::endl;
+					continue;
+				}
+				srp->deSerialize(is);
+				srp->m_last_good_position = srp->getBasePosition();
+				srp->m_last_good_position_age = 0;
+			}
+
+			if(newplayer)
+			{
+				addPlayer(player);
+			}
 		}
 	}
 }
 
 void ServerEnvironment::saveMeta()
 {
-	//std::string path = savedir + "/env_meta.txt";
-
-	// Open file and serialize
-	//std::ofstream os(path.c_str(), std::ios_base::binary);
-	/*std::ostringstream os;
-	if(os.good() == false)
-	{
-		infostream<<"ServerEnvironment::saveMeta(): Failed to open "
-				<<path<<std::endl;
-		throw SerializationError("Couldn't save env meta");
-	}*/
-
-	/*Settings args;
-	args.setU64("game_time", m_game_time);
-	args.setU64("time_of_day", getTimeOfDay());
-	args.writeLines(os);
-	os<<"EnvArgsEnd\n";*/
-	
 	m_meta_db.put("game_time",itos(m_game_time));
 	m_meta_db.put("time_of_day",itos(getTimeOfDay()));
 }
 
-void ServerEnvironment::loadMeta()
-{
-	//std::string path = savedir + "/env_meta.txt";
-
-	//// Open file and deserialize
-	//std::ifstream is(path.c_str(), std::ios_base::binary);
-	//if(is.good() == false)
-	//{
-	//	infostream<<"ServerEnvironment::loadMeta(): Failed to open "
-	//			<<path<<std::endl;
-	//	throw SerializationError("Couldn't load env meta");
-	//}
-
-	//Settings args;
-	//
-	//for(;;)
-	//{
-	//	if(is.eof())
-	//		throw SerializationError
-	//				("ServerEnvironment::loadMeta(): EnvArgsEnd not found");
-	//	std::string line;
-	//	std::getline(is, line);
-	//	std::string trimmedline = trim(line);
-	//	if(trimmedline == "EnvArgsEnd")
-	//		break;
-	//	args.parseConfigLine(line);
-	//}
-	
+void ServerEnvironment::loadMeta(const std::string& savedir)
+{	
 	try{
-		m_game_time = stoi(m_meta_db.get("game_time"));
-	}catch(BaseException&){
 		// Getting this is crucial, otherwise timestamps are useless
-		if(!m_database->isNew())
-			throw SerializationError("Couldn't load env meta game_time");
-	}
+		m_game_time = stoi(m_meta_db.get("game_time"));
 
-	try{
-		m_time_of_day = stoi(m_meta_db.get("time_of_day"));
-	}catch(BaseException &){
-		// This is not as important
-		m_time_of_day = 9000;
+		try{
+			m_time_of_day = stoi(m_meta_db.get("time_of_day"));
+		}catch(BaseException &){
+			// This is not as important
+			m_time_of_day = 9000;
+		}
+	}catch(std::exception&){
+		//failed, try to read from file
+
+		std::string path = savedir + "/env_meta.txt";
+
+		// Open file and deserialize
+		std::ifstream is(path.c_str(), std::ios_base::binary);
+		if(is.good())
+		{
+			Settings args;
+			
+			for(;;)
+			{
+				if(is.eof())
+					throw SerializationError
+							("ServerEnvironment::loadMeta(): EnvArgsEnd not found");
+				std::string line;
+				std::getline(is, line);
+				std::string trimmedline = trim(line);
+				if(trimmedline == "EnvArgsEnd")
+					break;
+				args.parseConfigLine(line);
+			}
+			
+			try{
+				m_game_time = args.getU64("game_time");
+			}catch(SettingNotFoundException &e){
+				// Getting this is crucial, otherwise timestamps are useless
+				throw SerializationError("Couldn't load env meta game_time");
+			}
+
+			try{
+				m_time_of_day = args.getU64("time_of_day");
+			}catch(SettingNotFoundException &e){
+				// This is not as important
+				m_time_of_day = 9000;
+			}
+		}
 	}
 }
 

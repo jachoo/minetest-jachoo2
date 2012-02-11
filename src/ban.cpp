@@ -26,8 +26,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "debug.h"
 #include "db.h"
 
-BanManager::BanManager(Database* database):
+BanManager::BanManager(Database* database, const std::string& file):
 		m_modified(false),
+		m_banfilepath(file),
 		m_database(database),
 		m_bantable(NULL)
 {
@@ -41,9 +42,10 @@ BanManager::~BanManager()
 	save();
 }
 
-void BanManager::init(Database* database)
+void BanManager::init(Database* database, const std::string& file)
 {
 	if(database!=NULL)m_database = database;
+	if(file!="")m_banfilepath = file;
 	assert(m_database != NULL);
 
 	m_bantable = &database->getTable<std::string,std::string>("ipban");
@@ -61,33 +63,42 @@ void BanManager::load()
 {
 	JMutexAutoLock lock(m_mutex);
 	
-	/*dstream<<"BanManager: loading from "<<m_banfilepath<<std::endl;
-	std::ifstream is(m_banfilepath.c_str(), std::ios::binary);
-	if(is.good() == false)
-	{
-		dstream<<"BanManager: failed loading from "<<m_banfilepath<<std::endl;
-		throw SerializationError("BanManager::load(): Couldn't open file");
-	}*/
-
 	dstream<<"BanManager: loading from DB"<<std::endl;
 
 	core::list<std::string> iplist;
 	if(!m_bantable->getKeys(iplist)) throw SerializationError("BanManager::load(): Couldn't read keys from ban DB");
 	
-	for(core::list<std::string>::ConstIterator it=iplist.begin(); it!=iplist.end(); it++)
-	{
-		/*if(is.eof() || is.good() == false)
-			break;*/
+	if(iplist.size()>0){
+		for(core::list<std::string>::ConstIterator it=iplist.begin(); it!=iplist.end(); it++)
+		{
+			const std::string& ip = *it;
 
-		const std::string& ip = *it;
+			std::string name;
+			if(!m_bantable->getNoEx(ip,name))continue;
 
-		std::string name;
-		if(!m_bantable->getNoEx(ip,name))continue;
+			if(ip.empty())
+				continue;
 
-		if(ip.empty())
-			continue;
-
-		m_ips[ip] = name;
+			m_ips[ip] = name;
+		}
+	} else {
+		//database is empty, try to load old way from file
+		dstream<<"BanManager: loading from "<<m_banfilepath<<std::endl;
+		std::ifstream is(m_banfilepath.c_str(), std::ios::binary);
+		if(is.good())
+			for(;;)
+			{
+				if(is.eof() || is.good() == false)
+					break;
+				std::string line;
+				std::getline(is, line, '\n');
+				Strfnd f(line);
+				std::string ip = trim(f.next("|"));
+				std::string name = trim(f.next("|"));
+				if(ip.empty())
+					continue;
+				m_ips[ip] = name;
+			}
 	}
 	m_modified = false;
 }
@@ -97,13 +108,6 @@ void BanManager::save()
 	JMutexAutoLock lock(m_mutex);
 	
 	dstream<<"BanManager: saving to DB"<<std::endl;
-	//std::ofstream os(m_banfilepath.c_str(), std::ios::binary);
-	
-	/*if(os.good() == false)
-	{
-		dstream<<"BanManager: failed loading from "<<m_banfilepath<<std::endl;
-		throw SerializationError("BanManager::load(): Couldn't open file");
-	}*/
 
 	for(std::map<std::string, std::string>::iterator
 			i = m_ips.begin();

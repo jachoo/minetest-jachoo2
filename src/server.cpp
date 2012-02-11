@@ -850,8 +850,6 @@ Server::Server(
 	):
 	m_env(NULL),
 	m_con(PROTOCOL_ID, 512, CONNECTION_TIMEOUT, this),
-	m_authmanager(NULL),
-	m_banmanager(NULL),
 	m_lua(NULL),
 	m_toolmgr(createToolDefManager()),
 	m_nodedef(createNodeDefManager()),
@@ -942,8 +940,8 @@ Server::Server(
 	m_env = new ServerEnvironment(new ServerMap(mapsavedir, this), m_lua,
 			this, this, mapsavedir);
 
-	m_authmanager.init(m_env->getDatabase());
-	m_banmanager.init(m_env->getDatabase());
+	m_authmanager.init(m_env->getDatabase(),m_mapsavedir+DIR_DELIM"auth.txt");
+	m_banmanager.init(m_env->getDatabase(),m_mapsavedir+DIR_DELIM"ipban.txt");
 
 	// Give environment reference to scripting api
 	scriptapi_add_environment(m_lua, m_env);
@@ -951,16 +949,12 @@ Server::Server(
 	// Register us to receive map edit events
 	m_env->getMap().addEventReceiver(this);
 
-	// If file exists, load environment metadata
-	/*if(fs::PathExists(m_mapsavedir+DIR_DELIM+"env_meta.txt"))
-	{*/
-		infostream<<"Server: Loading environment metadata"<<std::endl;
-		m_env->loadMeta();
-	//}
+	infostream<<"Server: Loading environment metadata"<<std::endl;
+	m_env->loadMeta(m_mapsavedir);
 
 	// Load players
 	infostream<<"Server: Loading players"<<std::endl;
-	m_env->deSerializePlayers();
+	m_env->deSerializePlayers(m_mapsavedir);
 
 	/*
 		Add some test ActiveBlockModifiers to environment

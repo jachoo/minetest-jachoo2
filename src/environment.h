@@ -202,13 +202,13 @@ public:
 		Save players
 	*/
 	void serializePlayers();
-	void deSerializePlayers();
+	void deSerializePlayers(const std::string& savedir);
 
 	/*
 		Save and load time of day and game timer
 	*/
 	void saveMeta();
-	void loadMeta();
+	void loadMeta(const std::string& savedir);
 
 	/*
 		External ActiveObject interface
@@ -356,9 +356,10 @@ private:
 	float m_game_time_fraction_counter;
 	core::list<ABMWithState> m_abms;
 
+	//env database object
 	Database* m_database;
-	Table<std::string,binary_t>& m_players_db;
-	Table<std::string,binary_t>& m_meta_db;
+	Table<std::string,binary_t>& m_players_db;	//players table
+	Table<std::string,binary_t>& m_meta_db;		//env metadata table
 };
 
 #ifndef SERVER
