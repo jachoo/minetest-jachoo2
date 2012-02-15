@@ -100,9 +100,8 @@ set(common_SRCS
 	content_abm.cpp
 	craftdef.cpp
 	nameidmapping.cpp
-	tooldef.cpp
+	itemdef.cpp
 	nodedef.cpp
-	craftitemdef.cpp
 	luaentity_common.cpp
 	scriptapi.cpp
 	script.cpp
@@ -116,7 +115,6 @@ set(common_SRCS
 	nodemetadata.cpp
 	serverobject.cpp
 	noise.cpp
-	mineral.cpp
 	porting.cpp
 	materials.cpp
 	defaultsettings.cpp

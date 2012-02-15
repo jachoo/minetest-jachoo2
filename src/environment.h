@@ -40,6 +40,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "db.h"
 
 class Server;
+class ServerEnvironment;
 class ActiveBlockModifier;
 class ServerActiveObject;
 typedef struct lua_State lua_State;

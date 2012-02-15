@@ -905,7 +905,7 @@ void Map::updateLighting(core::map<v3s16, MapBlock*> & a_blocks,
 /*
 */
 void Map::addNodeAndUpdate(v3s16 p, MapNode n,
-		core::map<v3s16, MapBlock*> &modified_blocks, std::string &player_name)
+		core::map<v3s16, MapBlock*> &modified_blocks)
 {
 	INodeDefManager *nodemgr = m_gamedef->ndef();
 
@@ -1001,7 +1001,6 @@ void Map::addNodeAndUpdate(v3s16 p, MapNode n,
 			errorstream<<"Failed to create node metadata \""
 					<<metadata_name<<"\""<<std::endl;
 		} else {
-			meta->setOwner(player_name);
 			setNodeMetadata(p, meta);
 		}
 	}
@@ -1281,8 +1280,7 @@ bool Map::addNodeWithEvent(v3s16 p, MapNode n)
 	bool succeeded = true;
 	try{
 		core::map<v3s16, MapBlock*> modified_blocks;
-		std::string st = std::string("");
-		addNodeAndUpdate(p, n, modified_blocks, st);
+		addNodeAndUpdate(p, n, modified_blocks);
 
 		// Copy modified_blocks to event
 		for(core::map<v3s16, MapBlock*>::Iterator
@@ -2867,10 +2865,7 @@ void ServerMap::saveBlock(MapBlock *block)
 	o.write((char*)&version, 1);
 	
 	// Write basic data
-	block->serialize(o, version);
-	
-	// Write extra data stored on disk
-	block->serializeDiskExtra(o, version);
+	block->serialize(o, version, true);
 	
 	// Write block to database	
 	m_blocks.put(p3d,o.str());
@@ -2911,10 +2906,7 @@ void ServerMap::loadBlock(std::string *blob, v3s16 p3d, MapSector *sector, bool 
 		}
 		
 		// Read basic data
-		block->deSerialize(is, version);
-
-		// Read extra data stored on disk
-		block->deSerializeDiskExtra(is, version);
+		block->deSerialize(is, version, true);
 		
 		// If it's a new block, insert it to the map
 		if(created_new)
