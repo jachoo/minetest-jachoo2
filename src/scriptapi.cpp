@@ -3272,6 +3272,135 @@ static int l_get_player_privs(lua_State *L)
 	return 1;
 }
 
+
+// get_player_meta(player_name,meta_name,type)
+// types: string, int, double, bool, v3s16, v3f, v3fpos
+static int l_get_player_meta(lua_State *L)
+{
+	const std::string player_name = luaL_checkstring(L, 1);
+	const std::string meta_name = luaL_checkstring(L, 2);
+	const std::string type = luaL_checkstring(L, 3);
+
+	try{
+
+		ServerEnvironment* env = get_env(L);
+		Player* player = env->getPlayer(player_name.c_str());
+		if(!player) throw BaseException("");
+
+		if(type=="string"){
+			const std::string val = env->getPlayerMeta<std::string>(*player,meta_name);
+			lua_pushstring(L,val.c_str());
+			return 1;
+		}
+
+		if(type=="int"){
+			int val = env->getPlayerMeta<int>(*player,meta_name);
+			lua_pushinteger(L,val);
+			return 1;
+		}
+
+		if(type=="double"){
+			double val = env->getPlayerMeta<double>(*player,meta_name);
+			lua_pushnumber(L,val);
+			return 1;
+		}
+
+		if(type=="bool"){
+			int val = env->getPlayerMeta<int>(*player,meta_name);
+			lua_pushboolean(L,val != 0);
+			return 1;
+		}
+
+		if(type=="v3s16"){
+			v3s16 val = env->getPlayerMeta<v3s16>(*player,meta_name);
+			push_v3s16(L,val);
+			return 1;
+		}
+
+		if(type=="v3f"){
+			v3f val = env->getPlayerMeta<v3f>(*player,meta_name);
+			push_v3f(L,val);
+			return 1;
+		}
+
+		if(type=="v3fpos"){
+			v3f val = env->getPlayerMeta<v3f>(*player,meta_name);
+			pushFloatPos(L,val);
+			return 1;
+		}
+
+	}catch(std::exception&){}
+
+	//we shall not be here if no error
+	lua_pushnil(L);
+	return 1;
+}
+
+
+// set_player_meta(player_name,meta_name,type,value)
+// types: string, int, double, bool, v3s16, v3f, v3fpos
+static int l_set_player_meta(lua_State *L)
+{
+	const std::string player_name = luaL_checkstring(L, 1);
+	const std::string meta_name = luaL_checkstring(L, 2);
+	const std::string type = luaL_checkstring(L, 3);
+
+	try{
+
+		ServerEnvironment* env = get_env(L);
+		Player* player = env->getPlayer(player_name.c_str());
+		if(!player) throw BaseException("");
+
+		if(type=="string"){
+			const std::string val = luaL_checkstring(L, 4);
+			env->setPlayerMeta(*player,meta_name,val);
+			return 0;
+		}
+
+		if(type=="int"){
+			const int val = luaL_checkint(L, 4);
+			env->setPlayerMeta(*player,meta_name,val);
+			return 0;
+		}
+
+		if(type=="double"){
+			const double val = luaL_checknumber(L, 4);
+			env->setPlayerMeta(*player,meta_name,val);
+			return 0;
+		}
+
+		if(type=="bool"){
+			if(!lua_isboolean(L,4)) return luaL_error(L,"bool expected");
+			const int val = lua_toboolean(L, 4);
+			env->setPlayerMeta(*player,meta_name,val);
+			return 0;
+		}
+
+		if(type=="v3s16"){
+			v3s16 val = check_v3s16(L,4);
+			env->setPlayerMeta(*player,meta_name,val);
+			return 0;
+		}
+
+		if(type=="v3f"){
+			v3f val = check_v3f(L,4);
+			env->setPlayerMeta(*player,meta_name,val);
+			return 0;
+		}
+
+		if(type=="v3fpos"){
+			v3f val = checkFloatPos(L,4);
+			env->setPlayerMeta(*player,meta_name,val);
+			return 0;
+		}
+
+	}catch(std::exception&){}
+
+	//we shall not be here if no error
+	return luaL_error(L,"set_player_meta - error occured");
+}
+
+
 // get_inventory(location)
 static int l_get_inventory(lua_State *L)
 {
@@ -3327,6 +3456,8 @@ static const struct luaL_Reg minetest_f [] = {
 	{"chat_send_all", l_chat_send_all},
 	{"chat_send_player", l_chat_send_player},
 	{"get_player_privs", l_get_player_privs},
+	{"get_player_meta", l_get_player_meta},
+	{"set_player_meta", l_set_player_meta},
 	{"get_inventory", l_get_inventory},
 	{"get_modpath", l_get_modpath},
 	{NULL, NULL}

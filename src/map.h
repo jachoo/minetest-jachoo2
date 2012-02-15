@@ -36,7 +36,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 //#include "db.h"
 class Database;
-template<class Key, class Data> class Table;
+class ITable;
+template<class Key, class Data = void> class Table;
 typedef std::string binary_t;
 
 class MapSector;

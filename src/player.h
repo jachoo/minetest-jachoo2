@@ -126,7 +126,7 @@ public:
 		return NULL;
 	}
 
-	const char * getName()
+	const char * getName() const
 	{
 		return m_name;
 	}

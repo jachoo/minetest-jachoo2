@@ -305,7 +305,8 @@ ServerEnvironment::ServerEnvironment(ServerMap *map, lua_State *L,
 	m_game_time_fraction_counter(0),
 	m_database( new Database(mapsavedir + DIR_DELIM "env.sqlite") ),
 	m_players_db( m_database->getTable<std::string,binary_t>("players") ),
-	m_meta_db( m_database->getTable<std::string,std::string>("meta") )
+	m_meta_db( m_database->getTable<std::string,std::string>("meta") ),
+	m_players_meta( m_database->getTable<std::string>("players_meta") )
 {
 }
 

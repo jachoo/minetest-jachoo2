@@ -37,6 +37,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <ostream>
 #include "utility.h"
 #include "activeobject.h"
+#include "db.h"
 
 class Server;
 class ActiveBlockModifier;
@@ -196,6 +197,16 @@ public:
 	Database* getDatabase()
 	{
 		return m_database;
+	}
+
+	template<class Data> Data getPlayerMeta(const Player& player, const std::string& name)
+	{
+		return m_players_meta.get<Data>(std::string(player.getName())+":"+name);
+	}
+
+	template<class Data> bool setPlayerMeta(const Player& player, const std::string& name, const Data& val)
+	{
+		return m_players_meta.put(std::string(player.getName())+":"+name,val);
 	}
 
 	/*
@@ -360,6 +371,7 @@ private:
 	Database* m_database;
 	Table<std::string,binary_t>& m_players_db;	//players table
 	Table<std::string,binary_t>& m_meta_db;		//env metadata table
+	Table<std::string>& m_players_meta;			//players metadata table
 };
 
 #ifndef SERVER
