@@ -1904,7 +1904,7 @@ ServerMap::ServerMap(std::string savedir, IGameDef *gamedef):
 	m_map_metadata_changed(true),
 	m_database( new Database(savedir + DIR_DELIM "map.sqlite") ),
 	m_blocks( m_database->getTable<v3s16,binary_t>("blocks",true) ),
-	m_map_meta( m_database->getTable<std::string,std::string>("map_meta") ),
+	m_map_meta( m_database->getTable<std::string>("map_meta") ),
 	m_sectors_meta( m_database->getTable<v2s16,binary_t>("sectors_meta") ),
 	m_savedir(savedir)
 {
@@ -2705,7 +2705,7 @@ void ServerMap::saveMapMeta()
 			<<std::endl;
 
 	bool success = true;
-	if(m_map_meta.put("seed",itos(m_seed))) success = false;
+	if(m_map_meta.put("seed",m_seed)) success = false;
 		
 	if(success) m_map_metadata_changed = false;
 	else infostream<<"ERROR: ServerMap::saveMapMeta() failed"<<std::endl;
@@ -2718,10 +2718,8 @@ void ServerMap::loadMapMeta()
 	infostream<<"ServerMap::loadMapMeta(): Loading map metadata"
 			<<std::endl;
 
-	std::string s;
-	if(m_map_meta.getNoEx("seed",s))
-		m_seed = stox<u64>(s);
-	else {
+	if(!m_map_meta.getNoEx("seed",m_seed))
+	{
 		//try to open from file
 
 		try {

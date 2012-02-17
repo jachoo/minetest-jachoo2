@@ -441,7 +441,7 @@ private:
 	*/
 	Database* m_database;
 	Table<v3s16,binary_t>& m_blocks;
-	Table<std::string,std::string>& m_map_meta;
+	Table<std::string>& m_map_meta;
 	Table<v2s16,binary_t>& m_sectors_meta;
 };
 

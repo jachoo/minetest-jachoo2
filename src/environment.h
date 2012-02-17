@@ -371,7 +371,7 @@ private:
 	//env database object
 	Database* m_database;
 	Table<std::string,binary_t>& m_players_db;	//players table
-	Table<std::string,binary_t>& m_meta_db;		//env metadata table
+	Table<std::string>& m_meta_db;		//env metadata table
 	Table<std::string>& m_players_meta;			//players metadata table
 };
 

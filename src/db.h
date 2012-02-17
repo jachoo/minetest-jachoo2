@@ -136,68 +136,15 @@ struct DBDataTypeTraits : public DBTypeTraits<T> {};
 //base class for tables in db
 class ITable {
 public:
-	ITable(sqlite3* database, const std::string& name, const std::string& key, const std::string& data, bool old_names = false):
-		m_database(database),
-		name(name),
-		key_name(key),
-		data_name(data),
-		old_names(old_names)
-	{
-		assert(database);
-
-		create();
-
-		int d;
-		std::string q;
-
-		std::string id_name = old_names ? "pos" : "id";
-
-		q = "SELECT `data` FROM `"+name+"` WHERE `"+id_name+"`=? LIMIT 1";
-		d = sqlite3_prepare_v2(m_database,q.c_str(), -1, &m_read, NULL);
-		if(d != SQLITE_OK) {
-			//infostream<<"WARNING: Database read statment failed to prepare: "<<sqlite3_errmsg(m_database)<<std::endl;
-			throw FileNotGoodException("Cannot prepare read statement");
-		}
-		
-		q = "REPLACE INTO `"+name+"` ("+id_name+",data) VALUES(?, ?)";
-		d = sqlite3_prepare_v2(m_database,q.c_str(), -1, &m_write, NULL);
-		if(d != SQLITE_OK) {
-			//infostream<<"WARNING: Database write statment failed to prepare: "<<sqlite3_errmsg(m_database)<<std::endl;
-			throw FileNotGoodException("Cannot prepare write statement");
-		}
-		
-		q = "SELECT `"+id_name+"` FROM `"+name+"`";
-		d = sqlite3_prepare_v2(m_database,q.c_str(), -1, &m_list, NULL);
-		if(d != SQLITE_OK) {
-			//infostream<<"WARNING: Database list statment failed to prepare: "<<sqlite3_errmsg(m_database)<<std::endl;
-			throw FileNotGoodException("Cannot prepare read statement");
-		}
-	}
+	ITable(sqlite3* database, const std::string& name, const std::string& key, const std::string& data, bool old_names = false);
 	
-	virtual ~ITable() {
-		if(m_read)
-			sqlite3_finalize(m_read);
-		if(m_write)
-			sqlite3_finalize(m_write);
-		if(m_list)
-			sqlite3_finalize(m_list);
-	}
+	virtual ~ITable();
 
 	//creates the table or returns false if failed
-	virtual bool createNoEx()
-	{
-		std::string id_name = old_names ? "pos" : "id";
-		std::string query =
-			"CREATE TABLE IF NOT EXISTS `" + name + "` ("
-			"`"+id_name+"` " + key_name + " NOT NULL PRIMARY KEY,"
-			"`data` " + data_name +
-			");";
-
-		return exec(query);
-	}
+	virtual bool createNoEx();
 	
 	//creates the table or throws DatabaseException
-	void create()
+	inline void create()
 	{
 		if(!createNoEx()) throw DatabaseException("Cannot create table!");
 	}
@@ -267,12 +214,7 @@ protected:
 	sqlite3_stmt *m_write;
 	sqlite3_stmt *m_list;
 
-	bool exec(const std::string& query)
-	{
-		assert(m_database);
-		int e = sqlite3_exec(m_database,query.c_str(), NULL, NULL, NULL);
-		return e == SQLITE_OK;
-	}
+	bool exec(const std::string& query);
 private:
 	ITable(const ITable&); //disable copy constructor
 };
@@ -317,7 +259,7 @@ protected:
 	typedef DBDataTypeTraits<Data> data_traits;
 };
 
-//template class for tables in database
+//template class for tables in database with not data type defined
 template<class Key>
 class Table<Key,void> : protected ITable {
 public:
@@ -362,30 +304,9 @@ protected:
 //database interface
 class Database {
 public:
-	Database(const std::string& file)
-	{
-		m_is_new = false;
+	Database(const std::string& file);
 
-		int d = sqlite3_open_v2(file.c_str(), &m_database, SQLITE_OPEN_READWRITE, NULL);
-		
-		if(d != SQLITE_OK) {
-			//can't open a file. try to create it.
-			m_is_new = true;
-			d = sqlite3_open_v2(file.c_str(), &m_database, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
-		}
-
-		if(d != SQLITE_OK) {
-			//infostream<<"WARNING: Database failed to open: "<<sqlite3_errmsg(m_database)<<std::endl;
-			throw FileNotGoodException("Cannot create/open database file");
-		}
-	}
-
-	~Database()
-	{
-		tables.clear(); //finalize all queries to tables
-		if(m_database)
-			sqlite3_close(m_database);
-	}
+	~Database();
 
 	//creates or loads a table with given key type, data type and name
 	//if old_names=true, then primary key will have name 'pos' instead of 'id'
@@ -421,14 +342,7 @@ public:
 
 	//creates or loads a typeless table
 	//if old_names=true, then primary key will have name 'pos' instead of 'id'
-	ITable& getTable(const std::string& name, bool old_names = false)
-	{
-		SharedPtr<ITable>& ptr = tables[name];
-		if(ptr==NULL)
-			ptr = new ITable(m_database,name,"BLOB","BLOB",old_names);
-
-		return *ptr;
-	}
+	ITable& getTable(const std::string& name, bool old_names = false);
 
 	//begins a transaction
 	void begin()

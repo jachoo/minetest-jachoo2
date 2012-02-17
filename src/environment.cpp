@@ -305,7 +305,7 @@ ServerEnvironment::ServerEnvironment(ServerMap *map, lua_State *L,
 	m_game_time_fraction_counter(0),
 	m_database( new Database(mapsavedir + DIR_DELIM "env.sqlite") ),
 	m_players_db( m_database->getTable<std::string,binary_t>("players") ),
-	m_meta_db( m_database->getTable<std::string,std::string>("meta") ),
+	m_meta_db( m_database->getTable<std::string>("meta") ),
 	m_players_meta( m_database->getTable<std::string>("players_meta") )
 {
 }
@@ -509,18 +509,18 @@ void ServerEnvironment::deSerializePlayers(const std::string& savedir)
 
 void ServerEnvironment::saveMeta()
 {
-	m_meta_db.put("game_time",itos(m_game_time));
-	m_meta_db.put("time_of_day",itos(getTimeOfDay()));
+	m_meta_db.put("game_time",m_game_time);
+	m_meta_db.put("time_of_day",getTimeOfDay());
 }
 
 void ServerEnvironment::loadMeta(const std::string& savedir)
 {	
 	try{
 		// Getting this is crucial, otherwise timestamps are useless
-		m_game_time = stoi(m_meta_db.get("game_time"));
+		m_game_time = m_meta_db.get<u32>("game_time");
 
 		try{
-			m_time_of_day = stoi(m_meta_db.get("time_of_day"));
+			m_time_of_day = m_meta_db.get<u32>("time_of_day");
 		}catch(BaseException &){
 			// This is not as important
 			m_time_of_day = 9000;
