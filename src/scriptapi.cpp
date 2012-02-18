@@ -3492,6 +3492,83 @@ static int l_get_player_privs(lua_State *L)
 }
 
 
+//according to _Type, executes _Func<TYPE>(_Params) and returns it to lua
+#define GET_META(_Type,_Func,_Params) \
+		if(_Type=="string"){ \
+			const std::string val = _Func<std::string> _Params; \
+			lua_pushstring(L,val.c_str()); \
+			return 1; \
+		} \
+		if(_Type=="int"){ \
+			int val = _Func<int> _Params; \
+			lua_pushinteger(L,val); \
+			return 1; \
+		} \
+		if(_Type=="double"){ \
+			double val = _Func<double> _Params; \
+			lua_pushnumber(L,val); \
+			return 1; \
+		} \
+		if(_Type=="bool"){ \
+			int val = _Func<int> _Params; \
+			lua_pushboolean(L,val != 0); \
+			return 1; \
+		} \
+		if(_Type=="v3s16"){ \
+			v3s16 val = _Func<v3s16> _Params; \
+			push_v3s16(L,val); \
+			return 1; \
+		} \
+		if(_Type=="v3f"){ \
+			v3f val = _Func<v3f> _Params; \
+			push_v3f(L,val); \
+			return 1; \
+		} \
+		if(_Type=="v3fpos"){ \
+			v3f val = _Func<v3f> _Params; \
+			pushFloatPos(L,val); \
+			return 1; \
+		}
+
+//according to _Type, gets lua param from _ValPos and executes _Func. Value read from lua is _value
+#define SET_META(_Type,_ValPos,_Func) \
+		if(_Type=="string"){ \
+			const std::string _value = luaL_checkstring(L, _ValPos); \
+			_Func; \
+			return 0; \
+		} \
+		if(_Type=="int"){ \
+			const int _value = luaL_checkint(L, _ValPos); \
+			_Func; \
+			return 0; \
+		} \
+		if(_Type=="double"){ \
+			const double _value = luaL_checknumber(L, _ValPos); \
+			_Func; \
+			return 0; \
+		} \
+		if(_Type=="bool"){ \
+			if(!lua_isboolean(L,_ValPos)) return luaL_error(L,"bool expected"); \
+			const int _value = lua_toboolean(L, _ValPos); \
+			_Func; \
+			return 0; \
+		} \
+		if(_Type=="v3s16"){ \
+			v3s16 _value = check_v3s16(L,_ValPos); \
+			_Func; \
+			return 0; \
+		} \
+		if(_Type=="v3f"){ \
+			v3f _value = check_v3f(L,_ValPos); \
+			_Func; \
+			return 0; \
+		} \
+		if(_Type=="v3fpos"){ \
+			v3f _value = checkFloatPos(L,_ValPos); \
+			_Func; \
+			return 0; \
+		}
+
 // get_player_meta(player_name,meta_name,type)
 // types: string, int, double, bool, v3s16, v3f, v3fpos
 static int l_get_player_meta(lua_State *L)
@@ -3506,47 +3583,7 @@ static int l_get_player_meta(lua_State *L)
 		Player* player = env->getPlayer(player_name.c_str());
 		if(!player) throw BaseException("");
 
-		if(type=="string"){
-			const std::string val = env->getPlayerMeta<std::string>(*player,meta_name);
-			lua_pushstring(L,val.c_str());
-			return 1;
-		}
-
-		if(type=="int"){
-			int val = env->getPlayerMeta<int>(*player,meta_name);
-			lua_pushinteger(L,val);
-			return 1;
-		}
-
-		if(type=="double"){
-			double val = env->getPlayerMeta<double>(*player,meta_name);
-			lua_pushnumber(L,val);
-			return 1;
-		}
-
-		if(type=="bool"){
-			int val = env->getPlayerMeta<int>(*player,meta_name);
-			lua_pushboolean(L,val != 0);
-			return 1;
-		}
-
-		if(type=="v3s16"){
-			v3s16 val = env->getPlayerMeta<v3s16>(*player,meta_name);
-			push_v3s16(L,val);
-			return 1;
-		}
-
-		if(type=="v3f"){
-			v3f val = env->getPlayerMeta<v3f>(*player,meta_name);
-			push_v3f(L,val);
-			return 1;
-		}
-
-		if(type=="v3fpos"){
-			v3f val = env->getPlayerMeta<v3f>(*player,meta_name);
-			pushFloatPos(L,val);
-			return 1;
-		}
+		GET_META(type,env->getPlayerMeta,(*player,meta_name))
 
 	}catch(std::exception&){}
 
@@ -3554,7 +3591,6 @@ static int l_get_player_meta(lua_State *L)
 	lua_pushnil(L);
 	return 1;
 }
-
 
 // set_player_meta(player_name,meta_name,type,value)
 // types: string, int, double, bool, v3s16, v3f, v3fpos
@@ -3570,48 +3606,49 @@ static int l_set_player_meta(lua_State *L)
 		Player* player = env->getPlayer(player_name.c_str());
 		if(!player) throw BaseException("");
 
-		if(type=="string"){
-			const std::string val = luaL_checkstring(L, 4);
-			env->setPlayerMeta(*player,meta_name,val);
-			return 0;
-		}
+		SET_META(type,4,env->setPlayerMeta(*player,meta_name,_value))
 
-		if(type=="int"){
-			const int val = luaL_checkint(L, 4);
-			env->setPlayerMeta(*player,meta_name,val);
-			return 0;
-		}
+	}catch(std::exception&){}
 
-		if(type=="double"){
-			const double val = luaL_checknumber(L, 4);
-			env->setPlayerMeta(*player,meta_name,val);
-			return 0;
-		}
+	//we shall not be here if no error
+	return luaL_error(L,"set_player_meta - error occured");
+}
 
-		if(type=="bool"){
-			if(!lua_isboolean(L,4)) return luaL_error(L,"bool expected");
-			const int val = lua_toboolean(L, 4);
-			env->setPlayerMeta(*player,meta_name,val);
-			return 0;
-		}
 
-		if(type=="v3s16"){
-			v3s16 val = check_v3s16(L,4);
-			env->setPlayerMeta(*player,meta_name,val);
-			return 0;
-		}
+// get_map_meta(meta_name,type)
+// types: string, int, double, bool, v3s16, v3f, v3fpos
+static int l_get_map_meta(lua_State *L)
+{
+	const std::string meta_name = luaL_checkstring(L, 1);
+	const std::string type = luaL_checkstring(L, 2);
 
-		if(type=="v3f"){
-			v3f val = check_v3f(L,4);
-			env->setPlayerMeta(*player,meta_name,val);
-			return 0;
-		}
+	try{
 
-		if(type=="v3fpos"){
-			v3f val = checkFloatPos(L,4);
-			env->setPlayerMeta(*player,meta_name,val);
-			return 0;
-		}
+		ServerEnvironment* env = get_env(L);
+		ServerMap& map = env->getServerMap();
+
+		GET_META(type,map.getMeta,(meta_name))
+
+	}catch(std::exception&){}
+
+	//we shall not be here if no error
+	lua_pushnil(L);
+	return 1;
+}
+
+// set_map_meta(meta_name,type,value)
+// types: string, int, double, bool, v3s16, v3f, v3fpos
+static int l_set_map_meta(lua_State *L)
+{
+	const std::string meta_name = luaL_checkstring(L, 1);
+	const std::string type = luaL_checkstring(L, 2);
+
+	try{
+
+		ServerEnvironment* env = get_env(L);
+		ServerMap& map = env->getServerMap();
+
+		SET_META(type,3,map.setMeta(meta_name,_value))
 
 	}catch(std::exception&){}
 
@@ -3702,6 +3739,8 @@ static const struct luaL_Reg minetest_f [] = {
 	{"get_player_privs", l_get_player_privs},
 	{"get_player_meta", l_get_player_meta},
 	{"set_player_meta", l_set_player_meta},
+	{"get_map_meta", l_get_map_meta},
+	{"set_map_meta", l_set_map_meta},
 	{"get_inventory", l_get_inventory},
 	{"get_digging_properties", l_get_digging_properties},
 	{"get_hitting_properties", l_get_hitting_properties},

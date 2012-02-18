@@ -381,7 +381,18 @@ public:
 	// Saves map seed and possibly other stuff
 	void saveMapMeta();
 	void loadMapMeta();
-	
+
+	//gets map meta data from DB
+	template<class Data> Data getMeta(const std::string& name)
+	{
+		return m_map_meta.get<Data>(name);
+	}
+	//sets map meta data
+	template<class Data> bool setMeta(const std::string& name, const Data& val)
+	{
+		return m_map_meta.put(name,val);
+	}
+
 	/*void saveChunkMeta();
 	void loadChunkMeta();*/
 	
@@ -403,10 +414,28 @@ public:
 	
 	void saveBlock(MapBlock *block);
 	// This will generate a sector with getSector if not found.
-	void loadBlock(std::string sectordir, std::string blockfile, MapSector *sector, bool save_after_load=false);
+	//void loadBlock(std::string sectordir, std::string blockfile, MapSector *sector, bool save_after_load=false);
 	MapBlock* loadBlock(v3s16 p);
 	// Database version
 	void loadBlock(std::string *blob, v3s16 p3d, MapSector *sector, bool save_after_load=false);
+
+	//block metadata
+	/*template<class Data> Data getBlockMeta(const v3s16& blockpos, const std::string& name)
+	{
+		return m_players_meta.get<Data>(blockpos);
+	}
+	template<class Data> Data getBlockMeta(const MapBlock& block, const std::string& name)
+	{
+		return m_players_meta.get<Data>(block.getPos());
+	}
+	template<class Data> bool setBlockMeta(const v3s16& blockpos, const std::string& name, const Data& val)
+	{
+		return m_players_meta.put(blockpos,val);
+	}
+	template<class Data> bool setBlockMeta(const MapBlock& block, const std::string& name, const Data& val)
+	{
+		return m_players_meta.put(block.getPos(),val);
+	}*/
 
 	// For debug printing
 	virtual void PrintInfo(std::ostream &out);
@@ -434,7 +463,7 @@ private:
 		Metadata is re-written on disk only if this is true.
 		This is reset to false when written on disk.
 	*/
-	bool m_map_metadata_changed;
+	//bool m_map_metadata_changed; - not need for this now
 	
 	/*
 		SQLite database and tables
@@ -443,6 +472,7 @@ private:
 	Table<v3s16,binary_t>& m_blocks;
 	Table<std::string>& m_map_meta;
 	Table<v2s16,binary_t>& m_sectors_meta;
+	//Table<v3s16,binary_t>& m_blocks_meta;
 };
 
 /*

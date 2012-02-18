@@ -1901,7 +1901,7 @@ void Map::nodeMetadataStep(float dtime,
 ServerMap::ServerMap(std::string savedir, IGameDef *gamedef):
 	Map(dout_server, gamedef),
 	m_seed(0),
-	m_map_metadata_changed(true),
+	//m_map_metadata_changed(true),
 	m_database( new Database(savedir + DIR_DELIM "map.sqlite") ),
 	m_blocks( m_database->getTable<v3s16,binary_t>("blocks",true) ),
 	m_map_meta( m_database->getTable<std::string>("map_meta") ),
@@ -2609,10 +2609,10 @@ void ServerMap::save(ModifiedState save_level)
 		infostream<<"ServerMap: Saving whole map, this can take time."
 				<<std::endl;
 	
-	if(m_map_metadata_changed || save_level == MOD_STATE_CLEAN)
-	{
+	//if(m_map_metadata_changed || save_level == MOD_STATE_CLEAN)
+	//{
 		saveMapMeta();
-	}
+	//}
 
 	// Profile modified reasons
 	Profiler modprofiler;
@@ -2707,8 +2707,8 @@ void ServerMap::saveMapMeta()
 	bool success = true;
 	if(m_map_meta.put("seed",m_seed)) success = false;
 		
-	if(success) m_map_metadata_changed = false;
-	else infostream<<"ERROR: ServerMap::saveMapMeta() failed"<<std::endl;
+	//if(success) m_map_metadata_changed = false;
+	if(!success) infostream<<"ERROR: ServerMap::saveMapMeta() failed"<<std::endl;
 }
 
 void ServerMap::loadMapMeta()
@@ -2752,7 +2752,7 @@ void ServerMap::loadMapMeta()
 			//failed to load metadata
 
 			if(m_database->isNew())
-				m_map_metadata_changed = true; //if it's a new db, only set this
+				;//m_map_metadata_changed = true; //if it's a new db, only set this
 			else
 				throw FileNotGoodException("Failed to load map metadata");
 		}
