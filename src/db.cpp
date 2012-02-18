@@ -265,11 +265,17 @@ Database::Database(const std::string& file)
 		//infostream<<"WARNING: Database failed to open: "<<sqlite3_errmsg(m_database)<<std::endl;
 		throw FileNotGoodException("Cannot create/open database file");
 	}
+
+	//begin first transaction
+	begin();
 }
 
 Database::~Database()
 {
 	tables.clear(); //finalize all queries to tables
+	
+	commit(); //commit changes
+
 	if(m_database)
 		sqlite3_close(m_database);
 }

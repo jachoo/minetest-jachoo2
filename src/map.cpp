@@ -2813,11 +2813,13 @@ bool ServerMap::loadSectorMeta(v2s16 p2d)
 
 
 void ServerMap::beginSave() {
-	m_database->begin();
+	//m_database->begin();
+	//m_database->sync();
 }
 
 void ServerMap::endSave() {
-	m_database->commit();
+	//m_database->commit();
+	m_database->sync();
 }
 
 void ServerMap::saveBlock(MapBlock *block)

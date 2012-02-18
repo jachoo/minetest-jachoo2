@@ -344,16 +344,11 @@ public:
 	//if old_names=true, then primary key will have name 'pos' instead of 'id'
 	ITable& getTable(const std::string& name, bool old_names = false);
 
-	//begins a transaction
-	void begin()
+	//commits all changes to database and begins a new transaction
+	void sync()
 	{
-		sqlite3_exec(m_database,"BEGIN;", NULL, NULL, NULL);
-	}
-
-	//commits a transaction
-	void commit()
-	{
-		sqlite3_exec(m_database,"COMMIT;", NULL, NULL, NULL);
+		commit();
+		begin();
 	}
 
 	//returns true if database was created from scratch (i.e. no database file existed before)
@@ -366,6 +361,18 @@ private:
 	sqlite3* m_database;
 	std::map<std::string,SharedPtr<ITable> > tables;
 	bool m_is_new;
+
+	//commits a transaction
+	void commit()
+	{
+		sqlite3_exec(m_database,"COMMIT;", NULL, NULL, NULL);
+	}
+
+	//begins a transaction
+	void begin()
+	{
+		sqlite3_exec(m_database,"BEGIN;", NULL, NULL, NULL);
+	}
 };
 
 
