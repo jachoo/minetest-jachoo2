@@ -3492,40 +3492,47 @@ static int l_get_player_privs(lua_State *L)
 }
 
 
-//according to _Type, executes _Func<TYPE>(_Params) and returns it to lua
-#define GET_META(_Type,_Func,_Params) \
+//according to _Type, executes _Func and returns it to lua. Type name is _type
+#define GET_META(_Type,_Func) \
 		if(_Type=="string"){ \
-			const std::string val = _Func<std::string> _Params; \
+			typedef std::string _type; \
+			const std::string val = _Func; \
 			lua_pushstring(L,val.c_str()); \
 			return 1; \
 		} \
 		if(_Type=="int"){ \
-			int val = _Func<int> _Params; \
+			typedef int _type; \
+			int val = _Func; \
 			lua_pushinteger(L,val); \
 			return 1; \
 		} \
 		if(_Type=="double"){ \
-			double val = _Func<double> _Params; \
+			typedef double _type; \
+			double val = _Func; \
 			lua_pushnumber(L,val); \
 			return 1; \
 		} \
 		if(_Type=="bool"){ \
-			int val = _Func<int> _Params; \
+			typedef bool _type; \
+			int val = _Func; \
 			lua_pushboolean(L,val != 0); \
 			return 1; \
 		} \
 		if(_Type=="v3s16"){ \
-			v3s16 val = _Func<v3s16> _Params; \
+			typedef v3s16 _type; \
+			v3s16 val = _Func; \
 			push_v3s16(L,val); \
 			return 1; \
 		} \
 		if(_Type=="v3f"){ \
-			v3f val = _Func<v3f> _Params; \
+			typedef v3f _type; \
+			v3f val = _Func; \
 			push_v3f(L,val); \
 			return 1; \
 		} \
 		if(_Type=="v3fpos"){ \
-			v3f val = _Func<v3f> _Params; \
+			typedef v3f _type; \
+			v3f val = _Func; \
 			pushFloatPos(L,val); \
 			return 1; \
 		}
@@ -3549,7 +3556,7 @@ static int l_get_player_privs(lua_State *L)
 		} \
 		if(_Type=="bool"){ \
 			if(!lua_isboolean(L,_ValPos)) return luaL_error(L,"bool expected"); \
-			const int _value = lua_toboolean(L, _ValPos); \
+			const bool _value = lua_toboolean(L, _ValPos); \
 			_Func; \
 			return 0; \
 		} \
@@ -3583,7 +3590,7 @@ static int l_get_player_meta(lua_State *L)
 		Player* player = env->getPlayer(player_name.c_str());
 		if(!player) throw BaseException("");
 
-		GET_META(type,env->getPlayerMeta,(*player,meta_name))
+		GET_META(type,env->getPlayerMeta<_type>(*player,meta_name))
 
 	}catch(std::exception&){}
 
@@ -3627,7 +3634,7 @@ static int l_get_map_meta(lua_State *L)
 		ServerEnvironment* env = get_env(L);
 		ServerMap& map = env->getServerMap();
 
-		GET_META(type,map.getMeta,(meta_name))
+		GET_META(type,map.getMeta<_type>(meta_name))
 
 	}catch(std::exception&){}
 
@@ -3656,6 +3663,218 @@ static int l_set_map_meta(lua_State *L)
 	return luaL_error(L,"set_player_meta - error occured");
 }
 
+
+static const std::string& get_current_mod_dir(lua_State *L)
+{
+	// get_current_modname()
+	lua_getfield(L, LUA_REGISTRYINDEX, "minetest_current_modname");
+
+	// get_modpath(modname)
+	const char *modname = luaL_checkstring(L, -1);
+
+	const ModSpec *mod = get_server(L)->getModSpec(modname);
+
+	lua_pop(L,1);
+
+	if(!mod) throw LuaError(L,"Error in reading mod's directory");
+
+	return mod->path;
+}
+
+struct Databases {
+
+	/* databases */
+
+	std::map<std::string,int> db_names;
+	std::vector<SharedPtr<Database> > dbs;
+
+	Database& get_db(int i)
+	{
+		if(i<=0 || i>dbs.size()) throw DatabaseException("Wrong database number");
+		return *dbs[ i-1 ];
+	}
+
+	Database& get_db(const std::string& file)
+	{
+		return *dbs[ get_db_i(file)-1 ];
+	}
+
+	int get_db_i(const std::string& file)
+	{
+		int i = db_names[file];
+		assert(i<=dbs.size());
+		if( i > 0 ) return i;
+
+		dbs.push_back( new Database(file) );
+		return db_names[file] = dbs.size();
+	}
+
+	/*void sync()
+	{
+		for(unsigned i=0; i<dbs.size(); i++)
+			dbs[i]->sync();
+	}*/
+
+	/* tables */
+
+	std::map<int,std::map<std::string,int> > table_names;
+	std::vector<ITable*> tables;
+
+	ITable& get_table(int i)
+	{
+		if(i<=0 || i>tables.size()) throw DatabaseException("Wrong table number");
+		return *tables[ i-1 ];
+	}
+
+	int get_table_i(int database, const std::string& name)
+	{
+		int i = table_names[database][name];
+		assert(i<=tables.size());
+		if( i > 0 ) return i;
+
+		Database& db = get_db(database);
+
+		tables.push_back( &db.getTable(name) );
+
+		return table_names[database][name] = tables.size();
+	}
+
+	/* data */
+
+	template<class Data, class Key> Data get_data(int table, const Key& key)
+	{
+		return get_table(table).get<Data>(key);
+	}
+
+	//sets map meta data
+	template<class Data, class Key> bool set_data(int table, const Key& key, const Data& val)
+	{
+		return get_table(table).put(key,val);
+	}
+
+} databases;
+
+// get_database(name) -> nil/int
+static int l_get_database(lua_State *L)
+{
+	try{
+
+		const std::string name = get_current_mod_dir(L) + DIR_DELIM + luaL_checkstring(L, 1) + ".sqlite";
+
+		int i = databases.get_db_i(name);
+
+		if(i>0){
+			lua_pushinteger(L,i);
+			return 1;
+		}
+
+	}catch(std::exception&){}
+
+	//we shall not be here if no error
+	lua_pushnil(L);
+	return 1;
+}
+
+// get_db_table(int db, string table_name) -> nil/int
+static int l_get_db_table(lua_State *L)
+{
+	const int db_i = luaL_checkint(L, 1);
+	const std::string table_name = luaL_checkstring(L, 2);
+
+	try{
+
+		int i = databases.get_table_i(db_i,table_name);
+
+		if(i>0){
+			lua_pushinteger(L,i);
+			return 1;
+		}
+
+	}catch(std::exception&){}
+
+	//we shall not be here if no error
+	lua_pushnil(L);
+	return 1;
+}
+
+static std::string param_to_binary(lua_State *L, int idx, const std::string& type)
+{
+	std::string s;
+	if(type=="string"){
+		s = luaL_checkstring(L, idx);
+	}
+	else if(type=="int"){
+		const int val = luaL_checkint(L, idx);
+		s.assign( (const char*)&val, sizeof(int));
+	}
+	else if(type=="double"){
+		const double val = luaL_checknumber(L, idx);
+		s.assign( (const char*)&val, sizeof(double));
+	}
+	else if(type=="bool"){
+		if(!lua_isboolean(L,idx)) throw LuaError(L,"bool expected");
+		const bool val = lua_toboolean(L, idx);
+		s.assign( (const char*)&val, sizeof(bool));
+	}
+	else if(type=="v3s16"){
+		DBKey val(check_v3s16(L,idx));
+		s.assign( (const char*)&val.i, sizeof(db_key));
+	}
+	else if(type=="v3f"){
+		v3f val = check_v3f(L,idx);
+		s.assign( (const char*)&val, sizeof(v3f));
+	}
+	else if(type=="v3fpos"){
+		v3f val = checkFloatPos(L,idx);
+		s.assign( (const char*)&val, sizeof(v3f));
+	}
+	return s;
+}
+
+// get_table_data(int table, string key_type, key, string data_type) -> nil/data
+int l_get_table_data(lua_State *L)
+{
+	try{
+
+		const int table_i = luaL_checkint(L, 1);
+		const std::string key_type = luaL_checkstring(L, 2);
+		const std::string key = param_to_binary(L, 3, key_type);
+		const std::string data_type = luaL_checkstring(L, 4);
+
+		/*std::cout << "Tabela: " << table_i
+			<< ", klucz: " << key_type << ":" << key
+			<< ", typ danych: " << data_type << std::endl;*/
+
+		GET_META( data_type, databases.get_data<_type>(table_i,key) )
+
+	}catch(std::exception&){}
+
+	//we shall not be here if no error
+	lua_pushnil(L);
+	return 1;
+}
+
+// set_table_data(int table, string key_type, key, string data_type, data)
+int l_set_table_data(lua_State *L)
+{
+	try{
+
+		const int table_i = luaL_checkint(L, 1);
+		const std::string key_type = luaL_checkstring(L, 2);
+		const std::string key = param_to_binary(L, 3, key_type);
+		const std::string data_type = luaL_checkstring(L, 4);
+
+		/*std::cout << "Tabela: " << table_i
+			<< ", klucz: " << key_type << ":" << key
+			<< ", typ danych: " << data_type << std::endl;*/
+
+		SET_META( data_type, 5, databases.set_data(table_i,key,_value) )
+
+	}catch(std::exception&){}
+
+	//we shall not be here if no error
+	return luaL_error(L,"set_table_data - error occured");
+}
 
 // get_inventory(location)
 static int l_get_inventory(lua_State *L)
@@ -3741,6 +3960,10 @@ static const struct luaL_Reg minetest_f [] = {
 	{"set_player_meta", l_set_player_meta},
 	{"get_map_meta", l_get_map_meta},
 	{"set_map_meta", l_set_map_meta},
+	{"get_database", l_get_database},
+	{"get_db_table", l_get_db_table},
+	{"get_table_data", l_get_table_data},
+	{"set_table_data", l_set_table_data},
 	{"get_inventory", l_get_inventory},
 	{"get_digging_properties", l_get_digging_properties},
 	{"get_hitting_properties", l_get_hitting_properties},

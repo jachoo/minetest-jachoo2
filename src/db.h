@@ -345,22 +345,11 @@ public:
 	ITable& getTable(const std::string& name, bool old_names = false);
 
 	//commits all changes to database and begins a new transaction
-	void sync()
+	/*void sync()
 	{
 		commit();
 		begin();
-	}
-
-	//returns true if database was created from scratch (i.e. no database file existed before)
-	inline bool isNew() const
-	{
-		return m_is_new;
-	}
-
-private:
-	sqlite3* m_database;
-	std::map<std::string,SharedPtr<ITable> > tables;
-	bool m_is_new;
+	}*/
 
 	//commits a transaction
 	void commit()
@@ -373,6 +362,17 @@ private:
 	{
 		sqlite3_exec(m_database,"BEGIN;", NULL, NULL, NULL);
 	}
+
+	//returns true if database was created from scratch (i.e. no database file existed before)
+	inline bool isNew() const
+	{
+		return m_is_new;
+	}
+
+private:
+	sqlite3* m_database;
+	std::map<std::string,SharedPtr<ITable> > tables;
+	bool m_is_new;
 };
 
 
