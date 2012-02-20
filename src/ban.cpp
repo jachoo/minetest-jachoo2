@@ -44,11 +44,13 @@ BanManager::~BanManager()
 
 void BanManager::init(Database* database, const std::string& file)
 {
+	JMutexAutoLock lock(m_mutex);
+
 	if(database!=NULL)m_database = database;
 	if(file!="")m_banfilepath = file;
 	assert(m_database != NULL);
 
-	m_bantable = &database->getTable<std::string,std::string>("ipban");
+	m_bantable = &m_database->getTable<std::string,std::string>("ipban");
 
 	try{
 		load();

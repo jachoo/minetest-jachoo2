@@ -121,7 +121,7 @@ AuthManager::AuthManager(Database* database, const std::string& authfilepath):
 {
 	m_mutex.Init();
 
-	if(m_database!=NULL)init(database);
+	if(m_database!=NULL)init();
 }
 
 AuthManager::~AuthManager()
@@ -131,11 +131,13 @@ AuthManager::~AuthManager()
 
 void AuthManager::init(Database* database, const std::string& authfilepath)
 {
+	JMutexAutoLock lock(m_mutex);
+
 	if(database!=NULL) m_database = database;
 	if(authfilepath!="") m_authfilepath = authfilepath;
 	assert(m_database!=NULL);
 
-	m_authtable = &database->getTable<std::string,std::string>("auth");
+	m_authtable = &m_database->getTable<std::string,std::string>("auth");
 
 	try{
 		load();

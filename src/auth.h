@@ -90,7 +90,7 @@ class AuthManager
 public:
 	AuthManager(Database* database = NULL, const std::string& file = "");
 	~AuthManager();
-	void init(Database* database, const std::string& file = "");
+	void init(Database* database = NULL, const std::string& file = "");
 	void load();
 	void save();
 	bool exists(const std::string &username);

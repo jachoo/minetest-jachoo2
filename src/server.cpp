@@ -940,8 +940,8 @@ Server::Server(
 	m_env = new ServerEnvironment(new ServerMap(mapsavedir, this), m_lua,
 			this, this, mapsavedir);
 
-	m_authmanager.init(m_env->getDatabase(),m_mapsavedir+DIR_DELIM"auth.txt");
-	m_banmanager.init(m_env->getDatabase(),m_mapsavedir+DIR_DELIM"ipban.txt");
+	m_authmanager = new AuthManager(m_env->getDatabase(),m_mapsavedir+DIR_DELIM"auth.txt");
+	m_banmanager = new BanManager(m_env->getDatabase(),m_mapsavedir+DIR_DELIM"ipban.txt");
 
 	// Give environment reference to scripting api
 	scriptapi_add_environment(m_lua, m_env);
@@ -1040,6 +1040,8 @@ Server::~Server()
 	}
 
 	// Delete Environment
+	delete m_banmanager;
+	delete m_authmanager;
 	delete m_env;
 
 	delete m_itemdef;
@@ -1792,12 +1794,12 @@ void Server::AsyncRunStep()
 			ScopeProfiler sp(g_profiler, "Server: saving stuff");
 
 			// Auth stuff
-			if(m_authmanager.isModified())
-				m_authmanager.save();
+			if(m_authmanager->isModified())
+				m_authmanager->save();
 
 			//Bann stuff
-			if(m_banmanager.isModified())
-				m_banmanager.save();
+			if(m_banmanager->isModified())
+				m_banmanager->save();
 			
 			// Map
 			JMutexAutoLock lock(m_env_mutex);
@@ -1866,10 +1868,10 @@ void Server::ProcessData(u8 *data, u32 datasize, u16 peer_id)
 		Address address = m_con.GetPeerAddress(peer_id);
 
 		// drop player if is ip is banned
-		if(m_banmanager.isIpBanned(address.serializeString())){
+		if(m_banmanager->isIpBanned(address.serializeString())){
 			SendAccessDenied(m_con, peer_id,
 					L"Your ip is banned. Banned name was "
-					+narrow_to_wide(m_banmanager.getBanName(
+					+narrow_to_wide(m_banmanager->getBanName(
 						address.serializeString())));
 			m_con.DeletePeer(peer_id);
 			return;
@@ -2015,7 +2017,7 @@ void Server::ProcessData(u8 *data, u32 datasize, u16 peer_id)
 		}
 		
 		// Add player to auth manager
-		if(m_authmanager.exists(playername) == false)
+		if(m_authmanager->exists(playername) == false)
 		{
 			std::wstring default_password =
 				narrow_to_wide(g_settings->get("default_password"));
@@ -2028,14 +2030,14 @@ void Server::ProcessData(u8 *data, u32 datasize, u16 peer_id)
 
 			infostream<<"Server: adding player "<<playername
 					<<" to auth manager"<<std::endl;
-			m_authmanager.add(playername);
-			m_authmanager.setPassword(playername, translated_default_password);
-			m_authmanager.setPrivs(playername,
+			m_authmanager->add(playername);
+			m_authmanager->setPassword(playername, translated_default_password);
+			m_authmanager->setPrivs(playername,
 					stringToPrivs(g_settings->get("default_privs")));
-			m_authmanager.save();
+			m_authmanager->save();
 		}
 
-		std::string checkpwd = m_authmanager.getPassword(playername);
+		std::string checkpwd = m_authmanager->getPassword(playername);
 
 		/*infostream<<"Server: Client gave password '"<<password
 				<<"', the correct one is '"<<checkpwd<<"'"<<std::endl;*/
@@ -2052,7 +2054,7 @@ void Server::ProcessData(u8 *data, u32 datasize, u16 peer_id)
 		// Enforce user limit.
 		// Don't enforce for users that have some admin right
 		if(m_clients.size() >= g_settings->getU16("max_users") &&
-				(m_authmanager.getPrivs(playername)
+				(m_authmanager->getPrivs(playername)
 					& (PRIV_SERVER|PRIV_BAN|PRIV_PRIVS|PRIV_PASSWORD)) == 0 &&
 				playername != g_settings->get("name"))
 		{
@@ -2720,7 +2722,7 @@ void Server::ProcessData(u8 *data, u32 datasize, u16 peer_id)
 
 		std::string playername = player->getName();
 
-		if(m_authmanager.exists(playername) == false)
+		if(m_authmanager->exists(playername) == false)
 		{
 			infostream<<"Server: playername not found in authmanager"<<std::endl;
 			// Wrong old password supplied!!
@@ -2728,7 +2730,7 @@ void Server::ProcessData(u8 *data, u32 datasize, u16 peer_id)
 			return;
 		}
 
-		std::string checkpwd = m_authmanager.getPassword(playername);
+		std::string checkpwd = m_authmanager->getPassword(playername);
 
 		if(oldpwd != checkpwd)
 		{
@@ -2740,7 +2742,7 @@ void Server::ProcessData(u8 *data, u32 datasize, u16 peer_id)
 
 		actionstream<<player->getName()<<" changes password"<<std::endl;
 
-		m_authmanager.setPassword(playername, newpwd);
+		m_authmanager->setPassword(playername, newpwd);
 		
 		infostream<<"Server: password change successful for "<<playername
 				<<std::endl;
@@ -4089,17 +4091,17 @@ std::wstring Server::getStatusString()
 void Server::setPlayerPassword(const std::string &name, const std::wstring &password)
 {
 	// Add player to auth manager
-	if(m_authmanager.exists(name) == false)
+	if(m_authmanager->exists(name) == false)
 	{
 		infostream<<"Server: adding player "<<name
 				<<" to auth manager"<<std::endl;
-		m_authmanager.add(name);
-		m_authmanager.setPrivs(name,
+		m_authmanager->add(name);
+		m_authmanager->setPrivs(name,
 			stringToPrivs(g_settings->get("default_privs")));
 	}
 	// Change password and save
-	m_authmanager.setPassword(name, translatePassword(name, password));
-	m_authmanager.save();
+	m_authmanager->setPassword(name, translatePassword(name, password));
+	m_authmanager->save();
 }
 
 // Saves g_settings to configpath given at initialization

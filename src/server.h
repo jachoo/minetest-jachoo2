@@ -454,7 +454,7 @@ public:
 	u64 getPlayerAuthPrivs(const std::string &name)
 	{
 		try{
-			return m_authmanager.getPrivs(name);
+			return m_authmanager->getPrivs(name);
 		}
 		catch(AuthNotFoundException &e)
 		{
@@ -466,7 +466,7 @@ public:
 	void setPlayerAuthPrivs(const std::string &name, u64 privs)
 	{
 		try{
-			return m_authmanager.setPrivs(name, privs);
+			return m_authmanager->setPrivs(name, privs);
 		}
 		catch(AuthNotFoundException &e)
 		{
@@ -483,19 +483,19 @@ public:
 
 	void setIpBanned(const std::string &ip, const std::string &name)
 	{
-		m_banmanager.add(ip, name);
+		m_banmanager->add(ip, name);
 		return;
 	}
 
 	void unsetIpBanned(const std::string &ip_or_name)
 	{
-		m_banmanager.remove(ip_or_name);
+		m_banmanager->remove(ip_or_name);
 		return;
 	}
 
 	std::string getBanDescription(const std::string &ip_or_name)
 	{
-		return m_banmanager.getBanDescription(ip_or_name);
+		return m_banmanager->getBanDescription(ip_or_name);
 	}
 
 	Address getPeerAddress(u16 peer_id)
@@ -651,10 +651,10 @@ private:
 	core::map<u16, RemoteClient*> m_clients;
 
 	// User authentication
-	AuthManager m_authmanager;
+	AuthManager* m_authmanager;
 
 	// Bann checking
-	BanManager m_banmanager;
+	BanManager* m_banmanager;
 
 	// Scripting
 	// Envlock and conlock should be locked when using Lua
