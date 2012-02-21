@@ -326,7 +326,7 @@ minetest.register_on_chat_message( function(name, message)
 		end
 		
 		local v = minetest.get_table_data(jachoo.mailbox,"string",player,"string")
-		if v and string.len(v)>0 then
+		if v then
 			v = v.."\n"..name..": "..msg
 		else
 			v = name..": "..msg
@@ -343,9 +343,9 @@ minetest.register_on_chat_message( function(name, message)
 	if message:sub(0, #cmd) == cmd then
 			
 		local v = minetest.get_table_data(jachoo.mailbox,"string",name,"string")
-		if v and string.len(v)>0 then
+		if v then
 			minetest.chat_send_player(name, "Mailbox: \n"..v)
-			minetest.set_table_data(jachoo.mailbox,"string",name,"string","")
+			minetest.remove_table_data(jachoo.mailbox,"string",name)
 		else
 			minetest.chat_send_player(name, "Your mailbox is empty")
 		end
