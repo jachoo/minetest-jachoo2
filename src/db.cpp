@@ -208,6 +208,13 @@ ITable::ITable(sqlite3* database, const std::string& name, const std::string& ke
 		throw FileNotGoodException("Cannot prepare write statement");
 	}
 	
+	q = "DELETE FROM `"+name+"` WHERE `"+id_name+"` = ?";
+	d = sqlite3_prepare_v2(m_database,q.c_str(), -1, &m_remove, NULL);
+	if(d != SQLITE_OK) {
+		//infostream<<"WARNING: Database list statment failed to prepare: "<<sqlite3_errmsg(m_database)<<std::endl;
+		throw FileNotGoodException("Cannot prepare remove statement");
+	}
+
 	q = "SELECT `"+id_name+"` FROM `"+name+"`";
 	d = sqlite3_prepare_v2(m_database,q.c_str(), -1, &m_list, NULL);
 	if(d != SQLITE_OK) {
@@ -221,6 +228,8 @@ ITable::~ITable() {
 		sqlite3_finalize(m_read);
 	if(m_write)
 		sqlite3_finalize(m_write);
+	if(m_remove)
+		sqlite3_finalize(m_remove);
 	if(m_list)
 		sqlite3_finalize(m_list);
 }

@@ -3746,10 +3746,14 @@ struct Databases {
 		return get_table(table).get<Data>(key);
 	}
 
-	//sets map meta data
 	template<class Data, class Key> bool set_data(int table, const Key& key, const Data& val)
 	{
 		return get_table(table).put(key,val);
+	}
+
+	template<class Key> bool remove_data(int table, const Key& key)
+	{
+		return get_table(table).remove(key);
 	}
 
 } databases;
@@ -3876,6 +3880,29 @@ int l_set_table_data(lua_State *L)
 	return luaL_error(L,"set_table_data - error occured");
 }
 
+// remove_table_data(int table, string key_type, key)
+int l_remove_table_data(lua_State *L)
+{
+	try{
+
+		const int table_i = luaL_checkint(L, 1);
+		const std::string key_type = luaL_checkstring(L, 2);
+		const std::string key = param_to_binary(L, 3, key_type);
+
+		/*std::cout << "Tabela: " << table_i
+			<< ", klucz: " << key_type << ":" << key
+			<< ", typ danych: " << data_type << std::endl;*/
+
+		databases.remove_data(table_i,key);
+
+		return 0;
+
+	}catch(std::exception&){}
+
+	//we shall not be here if no error
+	return luaL_error(L,"remove_table_data - error occured");
+}
+
 // get_inventory(location)
 static int l_get_inventory(lua_State *L)
 {
@@ -3964,6 +3991,7 @@ static const struct luaL_Reg minetest_f [] = {
 	{"get_db_table", l_get_db_table},
 	{"get_table_data", l_get_table_data},
 	{"set_table_data", l_set_table_data},
+	{"remove_table_data", l_remove_table_data},
 	{"get_inventory", l_get_inventory},
 	{"get_digging_properties", l_get_digging_properties},
 	{"get_hitting_properties", l_get_hitting_properties},

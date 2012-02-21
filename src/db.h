@@ -190,6 +190,17 @@ public:
 		return d;
 	}
 
+	//deletes row with given key
+	//if failed, returns false
+	template<class Key>
+	bool remove(const Key& key)
+	{
+		DBKeyTypeTraits<Key>::bind(m_remove,1,key);
+		int d = sqlite3_step(m_remove);
+		sqlite3_reset(m_remove);
+		return d == SQLITE_DONE;
+	}
+
 	//inserts all ids from tabale to given list
 	template<class Key>
 	bool getKeys(core::list<Key>& list)
@@ -212,6 +223,7 @@ protected:
 	sqlite3* m_database;
 	sqlite3_stmt *m_read;
 	sqlite3_stmt *m_write;
+	sqlite3_stmt *m_remove;
 	sqlite3_stmt *m_list;
 
 	bool exec(const std::string& query);
@@ -246,6 +258,13 @@ public:
 	inline Data get(const Key& key)
 	{
 		return ITable::get<Data>(key);
+	}
+
+	//deletes row with given key
+	//if failed, returns false
+	inline bool remove(const Key& key)
+	{
+		return ITable::remove(key);
 	}
 
 	//inserts all ids from tabale to given list
@@ -289,6 +308,13 @@ public:
 	inline Data get(const Key& key)
 	{
 		return ITable::get<Data>(key);
+	}
+
+	//deletes row with given key
+	//if failed, returns false
+	inline bool remove(const Key& key)
+	{
+		return ITable::remove(key);
 	}
 
 	//inserts all ids from tabale to given list
