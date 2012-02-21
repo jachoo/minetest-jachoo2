@@ -44,7 +44,7 @@ BanManager::~BanManager()
 
 void BanManager::init(Database* database, const std::string& file)
 {
-	JMutexAutoLock lock(m_mutex);
+	//JMutexAutoLock lock(m_mutex);
 
 	if(database!=NULL)m_database = database;
 	if(file!="")m_banfilepath = file;
