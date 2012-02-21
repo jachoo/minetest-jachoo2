@@ -3690,7 +3690,7 @@ struct Databases {
 
 	Database& get_db(int i)
 	{
-		if(i<=0 || i>dbs.size()) throw DatabaseException("Wrong database number");
+		if(i<=0 || i>(int)dbs.size()) throw DatabaseException("Wrong database number");
 		return *dbs[ i-1 ];
 	}
 
@@ -3702,7 +3702,7 @@ struct Databases {
 	int get_db_i(const std::string& file)
 	{
 		int i = db_names[file];
-		assert(i<=dbs.size());
+		assert(i<=(int)dbs.size());
 		if( i > 0 ) return i;
 
 		dbs.push_back( new Database(file) );
@@ -3722,14 +3722,14 @@ struct Databases {
 
 	ITable& get_table(int i)
 	{
-		if(i<=0 || i>tables.size()) throw DatabaseException("Wrong table number");
+		if(i<=0 || i>(int)tables.size()) throw DatabaseException("Wrong table number");
 		return *tables[ i-1 ];
 	}
 
 	int get_table_i(int database, const std::string& name)
 	{
 		int i = table_names[database][name];
-		assert(i<=tables.size());
+		assert(i<=(int)tables.size());
 		if( i > 0 ) return i;
 
 		Database& db = get_db(database);

@@ -179,11 +179,11 @@ template<> void DBTypeTraits<double>::bind(sqlite3_stmt* stmt, int num, const do
 
 
 ITable::ITable(sqlite3* database, const std::string& name, const std::string& key, const std::string& data, bool old_names):
-	m_database(database),
 	name(name),
 	key_name(key),
 	data_name(data),
-	old_names(old_names)
+	old_names(old_names),
+	m_database(database)
 {
 	assert(database);
 

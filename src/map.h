@@ -34,11 +34,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "utility.h" // Needed for UniqueQueue, a member of Map
 #include "modifiedstate.h"
 
-//#include "db.h"
-class Database;
-class ITable;
-template<class Key, class Data = void> class Table;
-typedef std::string binary_t;
+#include "db.h"
 
 class MapSector;
 class ServerMapSector;

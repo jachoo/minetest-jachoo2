@@ -114,10 +114,10 @@ u64 stringToPrivs(std::string str)
 }
 
 AuthManager::AuthManager(Database* database, const std::string& authfilepath):
-		m_database(database),
-		m_authtable( NULL ),
+		m_authfilepath(authfilepath),
 		m_modified(false),
-		m_authfilepath(authfilepath)
+		m_database(database),
+		m_authtable( NULL )
 {
 	m_mutex.Init();
 

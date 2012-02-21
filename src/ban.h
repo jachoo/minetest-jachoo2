@@ -26,11 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <jmutex.h>
 #include "common_irrlicht.h"
 #include "exceptions.h"
-
-//#include "db.h"
-class Database;
-template<class Key, class Data> class Table;
-typedef std::string binary_t;
+#include "db.h"
 
 class BanManager
 {

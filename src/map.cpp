@@ -1902,11 +1902,11 @@ ServerMap::ServerMap(std::string savedir, IGameDef *gamedef):
 	Map(dout_server, gamedef),
 	m_seed(0),
 	//m_map_metadata_changed(true),
+	m_savedir(savedir),
 	m_database( new Database(savedir + DIR_DELIM "map.sqlite") ),
 	m_blocks( m_database->getTable<v3s16,binary_t>("blocks",true) ),
 	m_map_meta( m_database->getTable<std::string>("map_meta") ),
-	m_sectors_meta( m_database->getTable<v2s16,binary_t>("sectors_meta") ),
-	m_savedir(savedir)
+	m_sectors_meta( m_database->getTable<v2s16,binary_t>("sectors_meta") )
 {
 	infostream<<__FUNCTION_NAME<<std::endl;
 

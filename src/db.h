@@ -22,6 +22,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef DB_HEADER
 #define DB_HEADER
 
+#include <typeinfo>
 #include <jmutex.h>
 #include <jmutexautolock.h>
 #include <jthread.h>
