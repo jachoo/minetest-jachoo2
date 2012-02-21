@@ -27,8 +27,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "db.h"
 
 BanManager::BanManager(Database* database, const std::string& file):
-		m_modified(false),
 		m_banfilepath(file),
+		m_modified(false),
 		m_database(database),
 		m_bantable(NULL)
 {

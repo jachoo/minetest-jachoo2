@@ -26,6 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <jmutex.h>
 #include "irrlichttypes.h"
 #include "exceptions.h"
+#include "db.h"
 
 // Player privileges. These form a bitmask stored in the privs field
 // of the player, and define things they're allowed to do. See also
@@ -80,11 +81,6 @@ public:
 	{}
 };
 
-//#include "db.h"
-class Database;
-template<class Key, class Data> class Table;
-typedef std::string binary_t;
-
 class AuthManager
 {
 public:
@@ -108,8 +104,7 @@ private:
 	core::map<std::string, AuthData> m_authdata;
 	bool m_modified;
 	Database* m_database;
-	Table<std::string,std::string>* m_authtable;
-	
+	Table<std::string,std::string>* m_authtable;	
 };
 
 #endif
