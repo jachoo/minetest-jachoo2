@@ -3621,6 +3621,22 @@ static int l_set_player_meta(lua_State *L)
 	return luaL_error(L,"set_player_meta - error occured");
 }
 
+// node_to_blockpos(v3s16 node_pos) -> v3s16 block_pos
+static int l_node_to_blockpos(lua_State *L)
+{
+	try{
+
+		const v3s16 node_pos = check_v3s16(L,1);
+		push_v3s16(L, getNodeBlockPos(node_pos) );
+		return 1;
+
+	}catch(std::exception&){}
+
+	//we shall not be here if no error
+	lua_pushnil(L);
+	return 1;
+}
+
 
 // get_map_meta(meta_name,type)
 // types: string, int, double, bool, v3s16, v3f, v3fpos
@@ -3987,6 +4003,7 @@ static const struct luaL_Reg minetest_f [] = {
 	{"set_player_meta", l_set_player_meta},
 	{"get_map_meta", l_get_map_meta},
 	{"set_map_meta", l_set_map_meta},
+	{"node_to_blockpos", l_node_to_blockpos},
 	{"get_database", l_get_database},
 	{"get_db_table", l_get_db_table},
 	{"get_table_data", l_get_table_data},
