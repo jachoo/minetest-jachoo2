@@ -2705,7 +2705,7 @@ void ServerMap::saveMapMeta()
 			<<std::endl;
 
 	bool success = true;
-	if(m_map_meta.put("seed",m_seed)) success = false;
+	if(!m_map_meta.put("seed",m_seed)) success = false;
 		
 	//if(success) m_map_metadata_changed = false;
 	if(!success) infostream<<"ERROR: ServerMap::saveMapMeta() failed"<<std::endl;
